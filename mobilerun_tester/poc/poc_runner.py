@@ -244,22 +244,45 @@ class ADBDevice:
             subprocess.run(cmd, stdout=f, check=True)
         return str(output_path)
 
+    def update_screen_size_from_image(self, image_path: str):
+        """Aggiorna le dimensioni reali dello schermo leggendole dall'immagine dello screenshot."""
+        try:
+            with Image.open(image_path) as img:
+                self.screen_width, self.screen_height = img.size
+                print(f" 📐 [Screen Geometry Detected] RisoluzioneReale: {self.screen_width}x{self.screen_height} px")
+        except Exception:
+            pass
+
+    def flutter_tap(self, x_percent: float, y_percent: float):
+        """
+        Esegue un singolo tocco nativo ADB standard sulle coordinate percentuali indicate.
+        """
+        effective_y_pct = max(6.5, y_percent) if y_percent < 5.0 else y_percent
+        
+        real_x = int((x_percent / 100.0) * self.screen_width)
+        real_y = int((effective_y_pct / 100.0) * self.screen_height)
+        
+        print(f"⚡ [ADB Single Tap] Coords: ({x_percent:.1f}%, {effective_y_pct:.1f}%) -> Pixel: ({real_x}, {real_y}) su schermi {self.screen_width}x{self.screen_height}")
+        self._run_cmd(["shell", "input", "tap", str(real_x), str(real_y)])
+
+    def tap(self, x_percent: float, y_percent: float, duration_ms: int = 350):
+        """Esegue il tap ottimizzato per Flutter."""
+        self.flutter_tap(x_percent, y_percent)
+
     def double_tap(self, x_percent: float, y_percent: float):
         """Esegue due tap in rapida sequenza a distanza di 100ms."""
         real_x = int((x_percent / 100.0) * self.screen_width)
         real_y = int((y_percent / 100.0) * self.screen_height)
         print(f"👉👉 [ADB Double Tap] Posizione: ({x_percent:.1f}%, {y_percent:.1f}%) -> Pixel: ({real_x}, {real_y})")
-        self._run_cmd(["shell", "input", "tap", str(real_x), str(real_y)])
+        self.flutter_tap(x_percent, y_percent)
         time.sleep(0.1)
-        self._run_cmd(["shell", "input", "tap", str(real_x), str(real_y)])
+        self.flutter_tap(x_percent, y_percent)
 
     def burst_tap(self, x_percent: float, y_percent: float, count: int = 3):
         """Invia una raffica (burst) di tocchi consecutivi sullo stesso punto per attivare pulsanti ostici."""
-        real_x = int((x_percent / 100.0) * self.screen_width)
-        real_y = int((y_percent / 100.0) * self.screen_height)
-        print(f"💥 [ADB Burst Tap x{count}] Inviati {count} tocchi su ({x_percent:.1f}%, {y_percent:.1f}%)")
+        print(f"💥 [ADB Burst Tap x{count}] Inviati {count} tocchi Flutter su ({x_percent:.1f}%, {y_percent:.1f}%)")
         for _ in range(count):
-            self._run_cmd(["shell", "input", "swipe", str(real_x), str(real_y), str(real_x), str(real_y), "150"])
+            self.flutter_tap(x_percent, y_percent)
             time.sleep(0.08)
 
     def robust_tap(self, x_percent: float, y_percent: float, mode: str = "tap", duration_ms: int = 350):
@@ -271,7 +294,7 @@ class ADBDevice:
         elif mode == "long_press":
             self.long_press(x_percent, y_percent, duration_ms=duration_ms if duration_ms > 350 else 1200)
         else:
-            self.tap(x_percent, y_percent, duration_ms=duration_ms)
+            self.flutter_tap(x_percent, y_percent)
 
     def long_press(self, x_percent: float, y_percent: float, duration_ms: int = 2000):
         """Esegue una pressione prolungata (Long Press / Long Tap) mantenendo le coordinate per duration_ms."""
@@ -549,14 +572,21 @@ def main():
             # Scatta screenshot per lo step corrente
             step_img_name = f"step_{i}_{step_type}.png"
             screenshot = adb.capture_screenshot(step_img_name)
+            adb.update_screen_size_from_image(screenshot)
 
-            tap_mode = step.get("tap_mode", "burst")  # Default: 'burst' (3 tocchi a raffica) per garantire la gesture
+            tap_mode = step.get("tap_mode", "tap")  # Default: 'tap' singolo pulito ottimizzato per Flutter
 
             if step_type in ("action_until", "long_press_until"):
                 until_condition = step.get("until_condition", "")
                 max_retries = step.get("max_retries", 3)
                 duration_ms = step.get("duration_ms", 2000)
                 
+                # Controlla prima se la condizione è già soddisfatta (es. popup già aperto)
+                check_initial = vision_agent.verify_assertion(screenshot, until_condition)
+                if check_initial.get("pass"):
+                    print(f" ✅ Condizione '{until_condition}' già soddisfatta prima del tap! Procedo.")
+                    continue
+
                 success = False
                 for attempt in range(1, max_retries + 1):
                     print(f" 🔄 Tentativo {attempt}/{max_retries} per {step_type}...")
@@ -568,7 +598,7 @@ def main():
                     else:
                         adb.robust_tap(x_pct, y_pct, mode=tap_mode)
                         
-                    time.sleep(1.5)
+                    time.sleep(1.8)  # Pausa assestamento animazione Flutter Dialog
                     
                     # Verifichiamo se la condizione è soddisfatta
                     after_shot = adb.capture_screenshot(f"step_{i}_until_attempt_{attempt}.png")

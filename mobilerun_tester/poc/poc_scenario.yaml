@@ -1,18 +1,20 @@
-# Scenario di Test PoC - Login e Configurazione Backend App
+# Scenario di Test PoC Completo - Impostazioni Backend & Login App
 name: "Backend Config & Login Test"
-description: "Configura l'URI API e lo Shop Code nelle impostazioni, quindi esegue il login con le credenziali."
+description: "Apre le impostazioni con l'icona ingranaggio, inserisce URI API e Shop Code, salva e quindi esegue il login."
 
 steps:
   # --- FASE 1: Configurazione Backend ---
-  - type: "action"
+  - type: "action_until"
     target: "Icona dell'ingranaggio (Impostazioni) in alto a destra dello schermo"
+    until_condition: "È visibile a schermo il popup o dialogo con scritto 'Insert API URL and store code' o i campi per URI e Shop Code"
+    max_retries: 4
 
   - type: "type_text"
-    target: "Campo di testo 'URI API' o 'Server URL'"
+    target: "Campo di testo per l'URI API o Server URL, puntando nella casella di testo per inserire l'URL"
     value: "betacc.planetps.it"
 
   - type: "type_text"
-    target: "Campo di testo 'Shop Code' o 'Codice Negozio'"
+    target: "Campo di testo per lo Shop Code o Codice Negozio, puntando nella casella di testo per inserire il codice"
     value: "dev2"
 
   - type: "action"
@@ -20,16 +22,16 @@ steps:
 
   # --- FASE 2: Autenticazione Utente ---
   - type: "type_text"
-    target: "Campo di testo per Username o Email"
+    target: "Area di testo per lo Username o Email, puntando esattamente sotto la scritta 'Username' (o 'Email') appena sopra la riga sottostante per prendere il focus della textbox"
     value: "andrea@plansol.it"
 
   - type: "type_text"
-    target: "Campo di testo per Password"
+    target: "Area di testo per la Password, puntando esattamente sotto la scritta 'Password' appena sopra la riga sottostante per prendere il focus della textbox"
     value: "samsung4"
 
   - type: "action"
     target: "Pulsante 'Login', 'Accedi' o freccia di invio"
 
-# --- FASE 3: Verifica Esito ---
+# --- FASE 3: Verifica Esito Finale ---
 assertion:
   description: "L'utente ha effettuato il login con successo ed è visibile la Home, la Dashboard, il catalogo o il menu principale dell'applicazione senza errori."
