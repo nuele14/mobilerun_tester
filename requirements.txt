@@ -1,0 +1,13 @@
+coverage==7.15.4
+ImageHash==4.3.2
+iniconfig==2.3.0
+numpy==2.5.1
+packaging==26.3
+pillow==12.3.0
+pluggy==1.6.0
+Pygments==2.20.0
+pytest==9.1.1
+pytest-cov==7.1.0
+PyWavelets==1.9.0
+PyYAML==6.0.3
+scipy==1.18.0

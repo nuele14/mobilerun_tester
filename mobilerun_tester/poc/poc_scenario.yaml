@@ -1,0 +1,35 @@
+# Scenario di Test PoC - Login e Configurazione Backend App
+name: "Backend Config & Login Test"
+description: "Configura l'URI API e lo Shop Code nelle impostazioni, quindi esegue il login con le credenziali."
+
+steps:
+  # --- FASE 1: Configurazione Backend ---
+  - type: "action"
+    target: "Icona dell'ingranaggio (Impostazioni) in alto a destra dello schermo"
+
+  - type: "type_text"
+    target: "Campo di testo 'URI API' o 'Server URL'"
+    value: "betacc.planetps.it"
+
+  - type: "type_text"
+    target: "Campo di testo 'Shop Code' o 'Codice Negozio'"
+    value: "dev2"
+
+  - type: "action"
+    target: "Pulsante 'Save' o 'Salva'"
+
+  # --- FASE 2: Autenticazione Utente ---
+  - type: "type_text"
+    target: "Campo di testo per Username o Email"
+    value: "andrea@plansol.it"
+
+  - type: "type_text"
+    target: "Campo di testo per Password"
+    value: "samsung4"
+
+  - type: "action"
+    target: "Pulsante 'Login', 'Accedi' o freccia di invio"
+
+# --- FASE 3: Verifica Esito ---
+assertion:
+  description: "L'utente ha effettuato il login con successo ed è visibile la Home, la Dashboard, il catalogo o il menu principale dell'applicazione senza errori."

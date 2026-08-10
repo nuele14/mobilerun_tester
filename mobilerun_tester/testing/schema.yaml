@@ -1,0 +1,27 @@
+schemaVersion: "1.0"
+scenarioStructure:
+  name: "string"
+  description: "string"
+  tags: ["string"]
+  steps:
+    - type: "action"
+      name: "string"
+      args: {}
+      expectedResult: "string|success/failure"
+    - type: "assertion"
+      name: "string"
+      args: {}
+      expectedResult: "boolean"
+    - type: "postcondition"
+      name: "string"
+      args: {}
+      expectedResult: "any"
+preconditions:
+  - type: "any"
+    args: {}
+expectedResultInterpretation: "string"
+concurrentExecution: "boolean"
+timeoutSettings:
+  duration: "integer"
+  unit: "string"
+  strict: "boolean"

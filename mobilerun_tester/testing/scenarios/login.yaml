@@ -1,0 +1,19 @@
+schemaVersion: "1.0"
+name: "Login Test"
+description: "Test di login con credenziali valide"
+tags: ["smoke", "ui-test"]
+steps:
+  - type: "action"
+    name: "Enter phone number"
+    args: {"phone": "+393312345678"}
+  - type: "action"
+    name: "Enter password"
+    args: {"password": "Secure123"}
+  - type: "action"
+    name: "Tap Login"
+    args: {}
+postconditions:
+  - type: "element_present"
+    element_type: "dashboard"
+    strict_mode: false
+expected_result: "success"
