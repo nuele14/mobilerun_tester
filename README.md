@@ -15,6 +15,7 @@ Il sistema esegue un grounding visivo a due livelli (**Coarse + Fine Bounding Bo
 6. [Dove Inserire e Creare gli Scenari di Test](#-dove-inserire-e-creare-gli-scenari-di-test)
 7. [Esecuzione dei Test (CLI)](#-esecuzione-dei-test-cli)
 8. [Report ed Ispezione Log](#-report-ed-ispezione-log)
+9. [Riconoscimenti e Crediti](#-riconoscimenti-e-crediti)
 
 ---
 
@@ -219,6 +220,18 @@ python -m mobilerun_tester.cli.main scenarios/login_flow.yaml
 Dopo l'esecuzione di un test, il framework genera automaticamente:
 1. **Report HTML Interattivi**: Salvati nella cartella `reports/` (es: `reports/login_flow_report.html` e dashboard `reports/master_report.html`). Contengono gli screenshot con l'overlay del mirino rosso e le etichette dei tocchi.
 2. **File di Log Dettagliati**: Salvati nella cartella `logs/run_YYYYMMDD_HHMMSS.log` (automaticamente ignorata da git), contenenti tutte le chiamate ADB, risposte JSON dei modelli e stack trace per il debugging.
+
+---
+
+## 🙏 Riconoscimenti e Crediti
+
+Questo progetto nasce ed è stato sviluppato come evoluzione ed estensione di **[MobileRun (droidrun)](https://github.com/droidrun/mobilerun)**, creato da **[Niels Schmidt](https://github.com/niels-schmidt)** ([DroidRun](https://droidrun.ai/)).
+
+### 💡 Il contributo di `mobilerun` a questo progetto:
+* **Infrastruttura Agenti & Tooling Mobile**: `mobilerun` fornisce l'architettura di base per l'interazione con i dispositivi (ADB/iOS), il supporto multimodale per i provider LLM/VLM ed il sistema di macro/telemetria.
+* **MobileRun Tester**: Sviluppato da **Emanuele Coltro**, estende l'infrastruttura originale trasformandola in un framework autonomo di testing E2E basato su scenari YAML visivi, motore di grounding a due livelli (**2-Pass Zoom Crop**), report HTML interattivi e CLI avanzata con spinner.
+
+Un sentito ringraziamento a Niels Schmidt e al team di DroidRun per lo straordinario lavoro svolto nel progetto originale.
 
 ---
 

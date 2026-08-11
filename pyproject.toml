@@ -2,7 +2,10 @@
 name = "mobilerun"
 version = "0.6.15"
 description = "A framework for controlling mobile devices through LLM agents"
-authors = [{ name = "Niels Schmidt", email = "niels@droidrun.ai" }]
+authors = [
+    { name = "Niels Schmidt", email = "niels@droidrun.ai" },
+    { name = "Emanuele Coltro" }
+]
 dependencies = [
     "async_adbutils",
     "llama-index==0.14.23",
