@@ -1,0 +1,33 @@
+name: "Login Flow Scenario - Production Suite"
+description: "Scenario di test automatico per la configurazione dell'URL API, inserimento delle credenziali e verifica dell'avvenuto Login"
+
+steps:
+  - type: "action_until"
+    target: "Icona dell'ingranaggio (Impostazioni) in alto a destra dello schermo"
+    until_condition: "È visibile a schermo un dialogo o popup con titolo 'Insert API URL and store code' e i campi di testo per URI API e Shop Code."
+    max_retries: 3
+
+  - type: "type_text"
+    target: "Campo di testo per l'URL API (o 'url API') nel dialogo delle impostazioni"
+    value: "betacc.planetps.it"
+
+  - type: "type_text"
+    target: "Campo di testo per lo Shop Code (o 'shop code') nel dialogo delle impostazioni"
+    value: "dev2"
+
+  - type: "action"
+    target: "Pulsante 'Save' per salvare le impostazioni nel dialogo"
+
+  - type: "type_text"
+    target: "Area di testo per lo Username o Email"
+    value: "andrea@plansol.it"
+
+  - type: "type_text"
+    target: "Area di testo per la Password"
+    value: "samsung4"
+
+  - type: "action"
+    target: "Pulsante azzurro con scritto 'Login'"
+
+assertion:
+  description: "La schermata di Login è scomparsa e si è aperto il catalogo/home page dell'applicazione con i prodotti ed i tasti del menu."

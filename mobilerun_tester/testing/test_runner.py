@@ -103,6 +103,9 @@ class MobileAgentRunner:
                     try:
                         # Implementare logica di verifica
                         post_ok &= self._check_condition(pc)
+                    except Exception as e:
+                        logger.error(f"Errore controllo post-condizione {pc}: {e}")
+                        post_ok = False
                 success = post_ok and success
                 reason = ("Successo" if success else "Fallimento post-condizioni")
             

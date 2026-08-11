@@ -1,14 +1,44 @@
+"""
+===============================================================================
+[Design] ARCHITECTURE OVERVIEW: INTERACTIVE HTML REPORTING ENGINE
+===============================================================================
+This module converts test execution telemetry payloads into standalone HTML reports.
+Key Design Requirements:
+1. Zero External Dependencies: Reports use self-contained CSS tokens and inline SVG/images
+   so reports render offline without CDN dependencies.
+2. High Visual Quality: Dark mode palette, KPI summary cards, pass/fail status badges,
+   and screenshot overlays with red touch target highlights.
+3. Master Suite Reports: Aggregates multi-scenario batch runs into a single dashboard overview.
+
+Data Flow Diagram:
++-------------------+      +----------------------+      +----------------------+
+| Test Execution    | ---> | HTML Template Engine | ---> | Standalone HTML      |
+| Telemetry Summary |      | Relative Image Links |      | Report File (.html)  |
++-------------------+      +----------------------+      +----------------------+
+===============================================================================
+"""
+
 import json
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 
 class ReportGenerator:
-    """Genera report HTML visivi ed interattivi con grafici, screenshots e dati di esecuzione."""
+    """
+    [Teacher] Generates interactive HTML report artifacts from scenario execution summaries.
+    """
+
+    # =========================================================================
+    # [Guide] SECTION 1: SINGLE SCENARIO REPORT GENERATION
+    # =========================================================================
 
     @staticmethod
-    def generate_html_report(summary: Dict[str, Any], output_path: str = "reports/latest_report.html"):
+    def GenerateSingleScenarioHtmlReport(summary: Dict[str, Any], output_path: str = "reports/latest_report.html") -> str:
+        """
+        [Function] Generates standalone HTML report for a single test scenario run.
+        [Why] Uses relative paths for screenshots so report directory can be zipped and shared.
+        """
         out_file = Path(output_path)
         out_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -66,10 +96,7 @@ class ReportGenerator:
             margin: 0;
             padding: 24px;
         }}
-        .container {{
-            max-width: 1000px;
-            margin: 0 auto;
-        }}
+        .container {{ max-width: 1000px; margin: 0 auto; }}
         .header-card {{
             background: var(--card-bg);
             border-radius: 16px;
@@ -82,33 +109,16 @@ class ReportGenerator:
         }}
         h1 {{ margin: 0 0 8px 0; font-size: 26px; }}
         .meta {{ color: var(--text-muted); font-size: 14px; }}
-        .badge {{
-            padding: 8px 16px;
-            border-radius: 9999px;
-            font-weight: 700;
-            font-size: 16px;
-            text-transform: uppercase;
-        }}
+        .badge {{ padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 16px; text-transform: uppercase; }}
         .badge.pass {{ background: rgba(16, 185, 129, 0.2); color: var(--accent-pass); border: 1px solid var(--accent-pass); }}
         .badge.fail {{ background: rgba(239, 68, 68, 0.2); color: var(--accent-fail); border: 1px solid var(--accent-fail); }}
         
-        .step-badge {{
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 700;
-        }}
+        .step-badge {{ padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }}
         .step-badge.pass {{ background: var(--accent-pass); color: #000; }}
         .step-badge.fail {{ background: var(--accent-fail); color: #fff; }}
         .time {{ color: var(--text-muted); font-size: 13px; margin-left: 8px; }}
 
-        .step-card {{
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 16px;
-            border: 1px solid #334155;
-        }}
+        .step-card {{ background: var(--card-bg); border-radius: 12px; padding: 18px; margin-bottom: 16px; border: 1px solid #334155; }}
         .step-header {{ display: flex; justify-content: space-between; align-items: center; }}
         .step-header h3 {{ margin: 0; font-size: 18px; color: #38bdf8; }}
         code {{ background: #090d16; padding: 2px 6px; border-radius: 4px; color: #f472b6; }}
@@ -116,13 +126,7 @@ class ReportGenerator:
         .step-img {{ max-width: 100%; max-height: 350px; border-radius: 8px; border: 1px solid #475569; transition: transform 0.2s; }}
         .step-img:hover {{ transform: scale(1.02); }}
 
-        .assertion-card {{
-            background: #111827;
-            border-left: 4px solid var(--accent-pass);
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 24px;
-        }}
+        .assertion-card {{ background: #111827; border-left: 4px solid var(--accent-pass); border-radius: 8px; padding: 16px; margin-top: 24px; }}
         .assertion-card.fail {{ border-left-color: var(--accent-fail); }}
     </style>
 </head>
@@ -154,9 +158,16 @@ class ReportGenerator:
         print(f"📊 [MobileRun Report] Report HTML generato con successo in: {out_file.resolve()}")
         return str(out_file.resolve())
 
+    # =========================================================================
+    # [Guide] SECTION 2: MASTER SUITE BATCH REPORT GENERATION
+    # =========================================================================
+
     @staticmethod
-    def generate_master_suite_report(summaries: list, output_path: str = "reports/master_report.html"):
-        """Genera un Master Report HTML di riepilogo per l'intera cartella 'scenarios'."""
+    def GenerateMasterSuiteHtmlReport(summaries: List[Dict[str, Any]], output_path: str = "reports/master_report.html") -> str:
+        """
+        [Function] Generates master dashboard overview for batch test suite runs.
+        [Why] Aggregates pass/fail KPIs and scenario summaries into a single HTML view.
+        """
         out_file = Path(output_path)
         out_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -295,3 +306,11 @@ class ReportGenerator:
         print(f"🏆 [Master Suite Report] Dashboard di riepilogo generata in: {out_file.resolve()}")
         return str(out_file.resolve())
 
+    # Legacy Aliases
+    @staticmethod
+    def generate_html_report(summary: Dict[str, Any], output_path: str = "reports/latest_report.html"):
+        return ReportGenerator.GenerateSingleScenarioHtmlReport(summary, output_path)
+
+    @staticmethod
+    def generate_master_suite_report(summaries: List[Dict[str, Any]], output_path: str = "reports/master_report.html"):
+        return ReportGenerator.GenerateMasterSuiteHtmlReport(summaries, output_path)

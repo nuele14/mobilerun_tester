@@ -1,149 +1,147 @@
+"""
+===============================================================================
+[Design] ADB ENGINE: Native Android input primitives and geometry scaling.
+1. Dispatches ADB shell taps without UI Automator overhead.
+2. Scales percentage coordinates to actual dynamic screenshot aspect ratio.
+3. Clears textfields via 3-step sequence: MOVE_END -> SELECT_ALL -> DELETE.
+===============================================================================
+"""
+
 import re
 import shutil
 import subprocess
 import time
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Tuple
 from PIL import Image
+from mobilerun_tester.core.logger import GetLogger
 
 
 class ADBDevice:
-    """Gestisce la comunicazione ADB nativa con il dispositivo Android."""
+    """[Teacher] Hardware ADB input dispatcher and dynamic screen orientation tracker."""
+
+    # === [ SECTION 1: INIT & GEOMETRY ] ===
 
     def __init__(self, serial: str = "", adb_path: str = "adb"):
         self.adb_path = shutil.which(adb_path) or adb_path
-        self.serial = serial or self._get_default_device()
-        self.screen_width, self.screen_height = self._get_screen_size()
-        self._enable_show_touches()
-        print(f"📱 [ADB Engine] Dispositivo attivo: {self.serial} ({self.screen_width}x{self.screen_height}px)")
+        self.serial = serial or self.DiscoverDefaultDevice()
+        self.screen_width, self.screen_height = self.FetchScreenSize()
+        self.EnableTouchVisualizer()
 
-    def _enable_show_touches(self):
-        """Attiva l'evidenziatore del tocco a schermo per il debug visivo."""
-        try:
-            self._run_cmd(["shell", "settings", "put", "system", "show_touches", "1"])
-        except Exception:
-            pass
-
-    def hide_keyboard_if_shown(self):
-        """Nasconde la tastiera Android solo se visibile."""
-        try:
-            output = self._run_cmd(["shell", "dumpsys", "input_method"])
-            if "mInputShown=true" in output or "mInputShown=True" in output:
-                print(" ⌨️ Tastiera aperta rilevata, la nascondo...")
-                self._run_cmd(["shell", "input", "keyevent", "4"])
-                time.sleep(0.3)
-        except Exception:
-            pass
-
-    def _run_cmd(self, args: list) -> str:
-        cmd = [self.adb_path]
-        if self.serial:
-            cmd.extend(["-s", self.serial])
-        cmd.extend(args)
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return res.stdout.strip()
-
-    def _get_default_device(self) -> str:
+    def DiscoverDefaultDevice(self) -> str:
+        """[Function] Resolves first connected ADB device serial."""
         res = subprocess.run([self.adb_path, "devices"], capture_output=True, text=True, check=True)
-        lines = res.stdout.strip().split("\n")[1:]
-        devices = [l.split("\t")[0] for l in lines if "\tdevice" in l]
+        devices = [l.split("\t")[0] for l in res.stdout.strip().split("\n")[1:] if "\tdevice" in l]
         if not devices:
-            raise RuntimeError("Nessun dispositivo Android connesso via ADB.")
+            raise RuntimeError("No ADB device connected.")
         return devices[0]
 
-    def _get_screen_size(self) -> Tuple[int, int]:
+    def FetchScreenSize(self) -> Tuple[int, int]:
+        """[Function] Fetches raw physical resolution from 'wm size'."""
         try:
-            output = self._run_cmd(["shell", "wm", "size"])
-            match = re.search(r"(\d+)x(\d+)", output)
-            if match:
-                return int(match.group(1)), int(match.group(2))
+            out = self.ExecuteAdbCommand(["shell", "wm", "size"])
+            m = re.search(r"(\d+)x(\d+)", out)
+            if m:
+                return int(m.group(1)), int(m.group(2))
         except Exception:
             pass
         return 1080, 2400
 
-    def capture_screenshot(self, output_path: str) -> str:
-        """Cattura uno screenshot nativo salvandolo nel percorso specificato."""
+    def EnableTouchVisualizer(self):
+        """[Function] Enables on-screen white touch indicators."""
+        try:
+            self.ExecuteAdbCommand(["shell", "settings", "put", "system", "show_touches", "1"])
+        except Exception:
+            pass
+
+    # === [ SECTION 2: SCREEN CAPTURE ] ===
+
+    def ExecuteAdbCommand(self, args: list) -> str:
+        """[Function] Subprocess runner injecting device serial."""
+        cmd = [self.adb_path] + (["-s", self.serial] if self.serial else []) + args
+        return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+
+    def CaptureScreenBuffer(self, output_path: str) -> str:
+        """[Function] Captures raw PNG screen buffer and updates display orientation."""
         out_file = Path(output_path)
         out_file.parent.mkdir(parents=True, exist_ok=True)
-
-        cmd = [self.adb_path]
-        if self.serial:
-            cmd.extend(["-s", self.serial])
-        cmd.extend(["exec-out", "screencap", "-p"])
-
+        cmd = [self.adb_path] + (["-s", self.serial] if self.serial else []) + ["exec-out", "screencap", "-p"]
         with open(out_file, "wb") as f:
             subprocess.run(cmd, stdout=f, check=True)
-
-        self.update_screen_size_from_image(str(out_file))
+        self.UpdateScreenGeometry(str(out_file))
         return str(out_file)
 
-    def update_screen_size_from_image(self, image_path: str):
-        """Aggiorna la geometria reale dello schermo leggendola dall'immagine dello screenshot."""
+    def UpdateScreenGeometry(self, image_path: str):
+        """[Function] Syncs screen width/height from actual screenshot dimensions."""
         try:
             with Image.open(image_path) as img:
                 self.screen_width, self.screen_height = img.size
         except Exception:
             pass
 
-    def flutter_tap(self, x_percent: float, y_percent: float):
-        """Esegue un singolo tocco nativo ADB standard sulle coordinate percentuali indicate."""
-        effective_y_pct = max(6.5, y_percent) if y_percent < 5.0 else y_percent
-        
-        real_x = int((x_percent / 100.0) * self.screen_width)
-        real_y = int((effective_y_pct / 100.0) * self.screen_height)
-        
-        print(f"⚡ [ADB Tap] Coords: ({x_percent:.1f}%, {effective_y_pct:.1f}%) -> Pixel: ({real_x}, {real_y}) [{self.screen_width}x{self.screen_height}]")
-        self._run_cmd(["shell", "input", "tap", str(real_x), str(real_y)])
+    # === [ SECTION 3: INPUT PRIMITIVES ] ===
 
-    def tap(self, x_percent: float, y_percent: float):
-        self.flutter_tap(x_percent, y_percent)
+    def HideSoftKeyboard(self):
+        """[Function] Dismisses soft keyboard if currently open."""
+        try:
+            out = self.ExecuteAdbCommand(["shell", "dumpsys", "input_method"])
+            if "mInputShown=true" in out or "mInputShown=True" in out:
+                self.ExecuteAdbCommand(["shell", "input", "keyevent", "4"])
+                time.sleep(0.3)
+        except Exception:
+            pass
 
-    def double_tap(self, x_percent: float, y_percent: float):
-        """Esegue due tap in rapida sequenza a distanza di 100ms."""
-        self.flutter_tap(x_percent, y_percent)
+    def ExecuteNativeTap(self, x_pct: float, y_pct: float):
+        """[Function] Dispatches single native tap with status bar Y-margin protection."""
+        eff_y = max(6.5, y_pct) if y_pct < 5.0 else y_pct
+        px_x, px_y = int((x_pct / 100.0) * self.screen_width), int((eff_y / 100.0) * self.screen_height)
+        GetLogger().debug(f"[ADB Tap] ({x_pct:.1f}%, {eff_y:.1f}%) -> Pixel ({px_x}, {px_y}) [{self.screen_width}x{self.screen_height}]")
+        self.ExecuteAdbCommand(["shell", "input", "tap", str(px_x), str(px_y)])
+
+    def ExecuteDoubleTap(self, x_pct: float, y_pct: float):
+        """[Function] Dispatches two taps with 100ms delay."""
+        self.ExecuteNativeTap(x_pct, y_pct)
         time.sleep(0.1)
-        self.flutter_tap(x_percent, y_percent)
+        self.ExecuteNativeTap(x_pct, y_pct)
 
-    def burst_tap(self, x_percent: float, y_percent: float, count: int = 3):
-        """Invia una raffica (burst) di tocchi consecutivi sullo stesso punto per attivare pulsanti ostici."""
+    def ExecuteBurstTap(self, x_pct: float, y_pct: float, count: int = 3):
+        """[Function] Dispatches rapid burst taps for stubborn UI elements."""
         for _ in range(count):
-            self.flutter_tap(x_percent, y_percent)
+            self.ExecuteNativeTap(x_pct, y_pct)
             time.sleep(0.08)
 
-    def robust_tap(self, x_percent: float, y_percent: float, mode: str = "tap", duration_ms: int = 350):
-        """Esegue il tocco basandosi sulla modalità selezionata ('tap', 'double_tap', 'long_press', 'burst')."""
+    def ExecuteLongPress(self, x_pct: float, y_pct: float, duration_ms: int = 2000):
+        """[Function] Executes stationary swipe to emulate long press."""
+        px_x, px_y = int((x_pct / 100.0) * self.screen_width), int((y_pct / 100.0) * self.screen_height)
+        GetLogger().debug(f"[ADB LongPress] ({x_pct:.1f}%, {y_pct:.1f}%) -> ({px_x}, {px_y}) [{duration_ms}ms]")
+        self.ExecuteAdbCommand(["shell", "input", "swipe", str(px_x), str(px_y), str(px_x), str(px_y), str(duration_ms)])
+
+    def DispatchRobustTap(self, x_pct: float, y_pct: float, mode: str = "tap", duration_ms: int = 350):
+        """[Function] Routes interaction to tap, double-tap, burst, or long-press."""
         if mode == "double_tap":
-            self.double_tap(x_percent, y_percent)
+            self.ExecuteDoubleTap(x_pct, y_pct)
         elif mode == "burst":
-            self.burst_tap(x_percent, y_percent, count=3)
+            self.ExecuteBurstTap(x_pct, y_pct)
         elif mode == "long_press":
-            self.long_press(x_percent, y_percent, duration_ms=duration_ms if duration_ms > 350 else 1200)
+            self.ExecuteLongPress(x_pct, y_pct, duration_ms=max(duration_ms, 1200))
         else:
-            self.flutter_tap(x_percent, y_percent)
+            self.ExecuteNativeTap(x_pct, y_pct)
 
-    def long_press(self, x_percent: float, y_percent: float, duration_ms: int = 2000):
-        """Esegue una pressione prolungata (Long Press / Long Tap)."""
-        real_x = int((x_percent / 100.0) * self.screen_width)
-        real_y = int((y_percent / 100.0) * self.screen_height)
-        print(f"👉 [ADB Long Press] Posizione: ({x_percent:.1f}%, {y_percent:.1f}%) -> Pixel: ({real_x}, {real_y}) per {duration_ms}ms")
-        self._run_cmd(["shell", "input", "swipe", str(real_x), str(real_y), str(real_x), str(real_y), str(duration_ms)])
+    # === [ SECTION 4: TEXT INPUT ] ===
 
-    def clear_textfield_content(self):
-        """Svuota completamente il contenuto di un campo di testo (MOVE_END -> CTRL+A -> DELETE)."""
-        print(" 🧹 Pulizia completa del campo testo (MOVE_END -> CTRL+A -> DELETE)...")
-        self._run_cmd(["shell", "input", "keyevent", "123"])
+    def ClearTextFieldContent(self):
+        """[Function] Clears textfield using MOVE_END -> CTRL+A -> DELETE sequence."""
+        GetLogger().debug("Purging textfield (MOVE_END -> CTRL+A -> DEL)...")
+        self.ExecuteAdbCommand(["shell", "input", "keyevent", "123"])
         time.sleep(0.08)
-        self._run_cmd(["shell", "input", "keyevent", "--metastate", "28672", "29"])
+        self.ExecuteAdbCommand(["shell", "input", "keyevent", "--metastate", "28672", "29"])
         time.sleep(0.08)
-        keyevents = ["67"] * 35
-        self._run_cmd(["shell", "input", "keyevent"] + keyevents)
+        self.ExecuteAdbCommand(["shell", "input", "keyevent"] + ["67"] * 35)
         time.sleep(0.15)
 
-    def input_text(self, text: str, clear_existing: bool = True):
-        """Invia testo al campo correntemente selezionato, svuotandolo se richiesto."""
+    def InjectText(self, text: str, clear_existing: bool = True):
+        """[Function] Purges and types sanitized text into focused field."""
         if clear_existing:
-            self.clear_textfield_content()
-
-        print(f" ⌨️ [ADB Input] Inserimento testo: '{text}'")
-        escaped_text = text.replace(" ", "%s")
-        self._run_cmd(["shell", "input", "text", escaped_text])
+            self.ClearTextFieldContent()
+        GetLogger().debug(f"[ADB Input] Typing: '{text}'")
+        self.ExecuteAdbCommand(["shell", "input", "text", text.replace(" ", "%s")])

@@ -10,6 +10,7 @@ trajectories/
 test.py
 test.ipynb
 *.log
+logs/
 
 messages_log.json
 

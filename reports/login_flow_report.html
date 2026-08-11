@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobileRun Tester Report - Login Flow Scenario - Production Suite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-pass: #10b981;
+            --accent-fail: #ef4444;
+            --text-muted: #94a3b8;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 24px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { margin: 0 0 8px 0; font-size: 26px; }
+        .meta { color: var(--text-muted); font-size: 14px; }
+        .badge {
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        .badge.pass { background: rgba(16, 185, 129, 0.2); color: var(--accent-pass); border: 1px solid var(--accent-pass); }
+        .badge.fail { background: rgba(239, 68, 68, 0.2); color: var(--accent-fail); border: 1px solid var(--accent-fail); }
+        
+        .step-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .step-badge.pass { background: var(--accent-pass); color: #000; }
+        .step-badge.fail { background: var(--accent-fail); color: #fff; }
+        .time { color: var(--text-muted); font-size: 13px; margin-left: 8px; }
+
+        .step-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 16px;
+            border: 1px solid #334155;
+        }
+        .step-header { display: flex; justify-content: space-between; align-items: center; }
+        .step-header h3 { margin: 0; font-size: 18px; color: #38bdf8; }
+        code { background: #090d16; padding: 2px 6px; border-radius: 4px; color: #f472b6; }
+        .img-container { margin-top: 12px; text-align: center; }
+        .step-img { max-width: 100%; max-height: 350px; border-radius: 8px; border: 1px solid #475569; transition: transform 0.2s; }
+        .step-img:hover { transform: scale(1.02); }
+
+        .assertion-card {
+            background: #111827;
+            border-left: 4px solid var(--accent-pass);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 24px;
+        }
+        .assertion-card.fail { border-left-color: var(--accent-fail); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-card">
+            <div>
+                <h1>📱 MobileRun Test Suite</h1>
+                <div class="meta">Scenario: <strong>Login Flow Scenario - Production Suite</strong> | Durata: <strong>182.79s</strong></div>
+            </div>
+            <div><span class="badge fail">FAILED</span></div>
+        </div>
+
+        <h2>📋 Dettaglio Esecuzione Step</h2>
+        
+            <div class="step-card">
+                <div class="step-header">
+                    <h3>Step 1: action_until</h3>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">40.21s</span></div>
+                </div>
+                <p><strong>Target:</strong> <code>Icona dell'ingranaggio (Impostazioni) in alto a destra dello schermo</code></p>
+                <p><strong>Note:</strong> Condizione verificata al tentativo 1.</p>
+                <div class="img-container">
+                    <a href="screenshots/step_1_action_until_tapped.png" target="_blank"><img src="screenshots/step_1_action_until_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                </div>
+            </div>
+            
+            <div class="step-card">
+                <div class="step-header">
+                    <h3>Step 2: type_text</h3>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">20.82s</span></div>
+                </div>
+                <p><strong>Target:</strong> <code>Campo di testo per l'URL API (o 'url API') nel dialogo delle impostazioni</code></p>
+                <p><strong>Note:</strong> Inserito testo 'betacc.planetps.it' a (41.2%, 38.7%)</p>
+                <div class="img-container">
+                    <a href="screenshots/step_2_type_text_tapped.png" target="_blank"><img src="screenshots/step_2_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                </div>
+            </div>
+            
+            <div class="step-card">
+                <div class="step-header">
+                    <h3>Step 3: type_text</h3>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">21.85s</span></div>
+                </div>
+                <p><strong>Target:</strong> <code>Campo di testo per lo Shop Code (o 'shop code') nel dialogo delle impostazioni</code></p>
+                <p><strong>Note:</strong> Inserito testo 'dev2' a (49.9%, 51.6%)</p>
+                <div class="img-container">
+                    <a href="screenshots/step_3_type_text_tapped.png" target="_blank"><img src="screenshots/step_3_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                </div>
+            </div>
+            
+            <div class="step-card">
+                <div class="step-header">
+                    <h3>Step 4: action</h3>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">15.17s</span></div>
+                </div>
+                <p><strong>Target:</strong> <code>Pulsante 'Save' per salvare le impostazioni nel dialogo</code></p>
+                <p><strong>Note:</strong> Tap eseguito a (60.0%, 63.1%)</p>
+                <div class="img-container">
+                    <a href="screenshots/step_4_action_tapped.png" target="_blank"><img src="screenshots/step_4_action_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                </div>
+            </div>
+            
+            <div class="step-card">
+                <div class="step-header">
+                    <h3>Step 5: type_text</h3>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">23.17s</span></div>
+                </div>
+                <p><strong>Target:</strong> <code>Area di testo per lo Username o Email</code></p>
+                <p><strong>Note:</strong> Inserito testo 'andrea@plansol.it' a (49.9%, 43.3%)</p>
+                <div class="img-container">
+                    <a href="screenshots/step_5_type_text_tapped.png" target="_blank"><img src="screenshots/step_5_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                </div>
+            </div>
+            
+            <div class="step-card">
+                <div class="step-header">
+                    <h3>Step 6: type_text</h3>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">21.74s</span></div>
+                </div>
+                <p><strong>Target:</strong> <code>Area di testo per la Password</code></p>
+                <p><strong>Note:</strong> Inserito testo 'samsung4' a (40.8%, 52.2%)</p>
+                <div class="img-container">
+                    <a href="screenshots/step_6_type_text_tapped.png" target="_blank"><img src="screenshots/step_6_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                </div>
+            </div>
+            
+            <div class="step-card">
+                <div class="step-header">
+                    <h3>Step 7: action</h3>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">20.87s</span></div>
+                </div>
+                <p><strong>Target:</strong> <code>Pulsante azzurro con scritto 'Login'</code></p>
+                <p><strong>Note:</strong> Tap eseguito a (50.0%, 62.3%)</p>
+                <div class="img-container">
+                    <a href="screenshots/step_7_action_tapped.png" target="_blank"><img src="screenshots/step_7_action_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                </div>
+            </div>
+            
+
+        <div class="assertion-card fail">
+            <h3>🔍 Asserzione Visiva Finale: <span class="step-badge fail">FAIL</span></h3>
+            <p><strong>Esito:</strong> Risposta VLM non formattata: (499,533)</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,3 +1,9 @@
+"""
+===============================================================================
+[Design] SCENARIO PARSER: Loads YAML scenarios and resolves ${ENV_VAR} placeholders.
+===============================================================================
+"""
+
 import os
 import yaml
 from pathlib import Path
@@ -5,45 +11,51 @@ from typing import Dict, Any, List
 
 
 class ScenarioParser:
-    """Carica, valida e risolve gli scenari di test da file YAML."""
+    """[Teacher] Validates and parses YAML scenario and configuration files."""
 
     @staticmethod
-    def load_yaml(yaml_path: str) -> Dict[str, Any]:
-        path = Path(yaml_path)
-        if not path.exists():
+    def LoadYamlDocument(yaml_path: str) -> Dict[str, Any]:
+        """[Function] Loads unconstrained YAML dictionary."""
+        p = Path(yaml_path)
+        if not p.exists():
             return {}
-        with open(path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-        return data if isinstance(data, dict) else {}
+        with open(p, "r", encoding="utf-8") as f:
+            d = yaml.safe_load(f)
+        return d if isinstance(d, dict) else {}
 
+    @staticmethod
+    def LoadConfigurationFile(config_path: str) -> Dict[str, Any]:
+        """[Function] Loads global configuration dictionary."""
+        return ScenarioParser.LoadYamlDocument(config_path)
+
+    @staticmethod
+    def LoadTestScenario(scenario_path: str) -> Dict[str, Any]:
+        """[Function] Loads scenario YAML enforcing 'steps' block presence."""
+        p = Path(scenario_path)
+        if not p.exists():
+            raise FileNotFoundError(f"Scenario not found: {scenario_path}")
+        d = ScenarioParser.LoadYamlDocument(scenario_path)
+        if not isinstance(d, dict) or "steps" not in d:
+            raise ValueError(f"Invalid scenario in {scenario_path}: missing 'steps' block.")
+        d["steps"] = ScenarioParser.ResolveEnvironmentVariables(d["steps"])
+        return d
+
+    @staticmethod
+    def ResolveEnvironmentVariables(steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """[Function] Replaces ${VAR_NAME} placeholders with OS environment values."""
+        res = []
+        for step in steps:
+            s = step.copy()
+            if isinstance(s.get("value"), str) and s["value"].startswith("${") and s["value"].endswith("}"):
+                s["value"] = os.getenv(s["value"][2:-1], s["value"])
+            res.append(s)
+        return res
+
+    # Aliases
     @staticmethod
     def load_config(config_path: str) -> Dict[str, Any]:
-        return ScenarioParser.load_yaml(config_path)
+        return ScenarioParser.LoadConfigurationFile(config_path)
 
     @staticmethod
     def load_scenario(scenario_path: str) -> Dict[str, Any]:
-        path = Path(scenario_path)
-        if not path.exists():
-            raise FileNotFoundError(f"File scenario non trovato: {scenario_path}")
-
-        data = ScenarioParser.load_yaml(scenario_path)
-
-        if not isinstance(data, dict) or "steps" not in data:
-            raise ValueError(f"Formato scenario non valido in {scenario_path}: manca il blocco 'steps'.")
-
-        data["steps"] = ScenarioParser._resolve_variables(data["steps"])
-        return data
-
-    @staticmethod
-    def _resolve_variables(steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Risolve eventuali variabili di ambiente (es. ${ENV_VAR}) presenti nei valori degli step."""
-        resolved_steps = []
-        for step in steps:
-            resolved_step = step.copy()
-            if "value" in resolved_step and isinstance(resolved_step["value"], str):
-                val = resolved_step["value"]
-                if val.startswith("${") and val.endswith("}"):
-                    env_name = val[2:-1]
-                    resolved_step["value"] = os.getenv(env_name, val)
-            resolved_steps.append(resolved_step)
-        return resolved_steps
+        return ScenarioParser.LoadTestScenario(scenario_path)
