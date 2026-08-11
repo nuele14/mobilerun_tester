@@ -134,7 +134,7 @@ server:
   auto_start: true                                              # Avvia il server automaticamente se non attivo
 
 device:
-  serial: ""                                                    # Serial ADB (vuoto per rilevamento automatico)
+  serial: ""                                                    # Serial ADB (se vuoto o non connesso, si avvia il menu interattivo)
   show_touches: true                                            # Attiva l'indicatore bianco dei tocchi a schermo
 
 runner:
@@ -142,6 +142,14 @@ runner:
   debug_screenshots_dir: "reports/screenshots"
   reports_dir: "reports"
 ```
+
+### 📱 Selezione Interattiva Dispositivo ADB & Autosalvataggio Preferenze
+Quando il framework viene avviato:
+1. Se il parametro `device.serial` nel file di configurazione è vuoto (`""`) oppure il dispositivo salvato **non è attualmente connesso** via USB/ADB:
+   - Il sistema scansiona i dispositivi Android ed emulatori collegati.
+   - Viene mostrato un **menu di selezione interattivo** da terminale.
+2. Una volta selezionato il dispositivo desiderato (es. `R52M904J1QM`), il suo serial viene **salvato automaticamente nelle preferenze** ([`mobilerun_tester/config/default_config.yaml`](mobilerun_tester/config/default_config.yaml)).
+3. Per le esecuzioni successive, il sistema utilizzerà direttamente il dispositivo salvato senza più richiedere l'intervento dell'utente!
 
 ---
 

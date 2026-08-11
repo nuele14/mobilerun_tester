@@ -1,8 +1,8 @@
 server:
-  host: "127.0.0.1"
+  host: 127.0.0.1
   port: 8080
-  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"
-  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"
+  model_path: ~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf
+  mmproj_path: ~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf
   context_size: 4096
   gpu_layers: 99
   threads: 8
@@ -10,12 +10,10 @@ server:
   cache_reuse: 256
   auto_start: true
   startup_timeout_seconds: 60
-
 device:
-  serial: ""
+  serial: R52M904J1QM
   show_touches: true
-
 runner:
   default_max_retries: 3
-  debug_screenshots_dir: "reports/screenshots"
-  reports_dir: "reports"
+  debug_screenshots_dir: reports/screenshots
+  reports_dir: reports

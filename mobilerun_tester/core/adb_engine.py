@@ -11,10 +11,11 @@ import re
 import shutil
 import subprocess
 import time
+import yaml
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List
 from PIL import Image
-from mobilerun_tester.core.logger import GetLogger
+from mobilerun_tester.core.logger import GetLogger, console
 
 
 class ADBDevice:
@@ -22,19 +23,109 @@ class ADBDevice:
 
     # === [ SECTION 1: INIT & GEOMETRY ] ===
 
-    def __init__(self, serial: str = "", adb_path: str = "adb"):
+    def __init__(self, serial: str = "", adb_path: str = "adb", config_path: str = "mobilerun_tester/config/default_config.yaml"):
         self.adb_path = shutil.which(adb_path) or adb_path
-        self.serial = serial or self.DiscoverDefaultDevice()
+        self.config_path = config_path
+        self.serial = self.ResolveOrSelectDevice(serial)
         self.screen_width, self.screen_height = self.FetchScreenSize()
         self.EnableTouchVisualizer()
 
-    def DiscoverDefaultDevice(self) -> str:
-        """[Function] Resolves first connected ADB device serial."""
-        res = subprocess.run([self.adb_path, "devices"], capture_output=True, text=True, check=True)
-        devices = [l.split("\t")[0] for l in res.stdout.strip().split("\n")[1:] if "\tdevice" in l]
-        if not devices:
-            raise RuntimeError("No ADB device connected.")
-        return devices[0]
+    def GetConnectedDevices(self) -> List[str]:
+        """[Function] Returns list of currently connected ADB device serials."""
+        try:
+            res = subprocess.run([self.adb_path, "devices"], capture_output=True, text=True, check=True)
+            lines = res.stdout.strip().split("\n")[1:]
+            return [l.split("\t")[0] for l in lines if "\tdevice" in l]
+        except Exception:
+            return []
+
+    def SaveDeviceToConfig(self, serial: str):
+        """[Function] Persists the selected ADB device serial to configuration YAML file."""
+        logger = GetLogger()
+        if not self.config_path:
+            return
+
+        cfg_file = Path(self.config_path)
+        if not cfg_file.exists():
+            return
+
+        try:
+            with open(cfg_file, "r", encoding="utf-8") as f:
+                cfg_data = yaml.safe_load(f) or {}
+
+            if "device" not in cfg_data or not isinstance(cfg_data["device"], dict):
+                cfg_data["device"] = {}
+
+            if cfg_data["device"].get("serial") == serial:
+                return
+
+            cfg_data["device"]["serial"] = serial
+
+            with open(cfg_file, "w", encoding="utf-8") as f:
+                yaml.dump(cfg_data, f, default_flow_style=False, sort_keys=False)
+
+            logger.info(f"Saved selected ADB device '{serial}' to {self.config_path}")
+            console.print(f"💾 [bold green]Dispositivo '{serial}' salvato con successo nelle preferenze[/bold green] ([dim]{self.config_path}[/dim])\n")
+        except Exception as e:
+            logger.warning(f"Could not save device serial to config: {e}")
+
+    def ResolveOrSelectDevice(self, configured_serial: str) -> str:
+        """
+        [Function] Resolves target ADB device serial:
+        1. If configured_serial is present in connected devices -> use it immediately.
+        2. If configured_serial is empty or not connected:
+           - Prompts user interactively to select a device.
+           - Saves the choice into config file for future runs.
+        """
+        logger = GetLogger()
+        connected = self.GetConnectedDevices()
+
+        if not connected:
+            logger.error("No ADB devices connected.")
+            console.print("[bold red]❌ Errore: Nessun dispositivo o emulatore Android connesso via ADB![/bold red]")
+            console.print("[dim]Assicurati che lo smartphone o l'emulatore sia collegato e che 'USB Debugging' sia attivo.[/dim]")
+            raise RuntimeError("No ADB devices connected.")
+
+        # Se il serial salvato nelle preferenze è attualmente connesso, usalo direttamente
+        if configured_serial and configured_serial in connected:
+            logger.info(f"Using configured ADB device: {configured_serial}")
+            return configured_serial
+
+        # Altrimenti, mostriamo la selezione interattiva
+        console.print("\n[bold yellow]📱 SELEZIONE DISPOSITIVO ANDROID (ADB)[/bold yellow]")
+        if configured_serial:
+            console.print(f"[dim]Il dispositivo salvato nelle preferenze ('{configured_serial}') non è attualmente connesso.[/dim]")
+        else:
+            console.print("[dim]Nessun dispositivo predefinito salvato nelle preferenze.[/dim]")
+
+        console.print("Dispositivi connessi disponibili:")
+        for idx, dev_serial in enumerate(connected, 1):
+            console.print(f"  [bold cyan]{idx})[/bold cyan] [bold white]{dev_serial}[/bold white]")
+
+        selected_serial = connected[0]
+        if len(connected) == 1:
+            selected_serial = connected[0]
+            console.print(f"\n[green]✓ Selezionato automaticamente:[/green] [bold]{selected_serial}[/bold]")
+        else:
+            while True:
+                try:
+                    choice = input(f"\nSeleziona il dispositivo (1-{len(connected)}) [1]: ").strip()
+                    if not choice:
+                        selected_serial = connected[0]
+                        break
+                    idx_choice = int(choice)
+                    if 1 <= idx_choice <= len(connected):
+                        selected_serial = connected[idx_choice - 1]
+                        break
+                    else:
+                        console.print(f"[red]Inserisci un numero compreso tra 1 e {len(connected)}[/red]")
+                except (ValueError, KeyboardInterrupt):
+                    console.print(f"[yellow]Selezione predefinita: {connected[0]}[/yellow]")
+                    selected_serial = connected[0]
+                    break
+
+        self.SaveDeviceToConfig(selected_serial)
+        return selected_serial
 
     def FetchScreenSize(self) -> Tuple[int, int]:
         """[Function] Fetches raw physical resolution from 'wm size'."""

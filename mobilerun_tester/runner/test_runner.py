@@ -11,8 +11,9 @@ from mobilerun_tester.core.logger import GetLogger, GetLogFilePath, StatusSpinne
 class TestRunner:
     """[Teacher] Orchestrates test steps and gathers performance metrics."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], config_path: str = "mobilerun_tester/config/default_config.yaml"):
         self.config = config
+        self.config_path = config_path
         self.server_mgr = LlamaServerManager(config)
         self.reports_dir = Path(config.get("runner", {}).get("reports_dir", "reports"))
         self.screenshots_dir = Path(config.get("runner", {}).get("debug_screenshots_dir", "reports/screenshots"))
@@ -33,7 +34,7 @@ class TestRunner:
                 logger.error("Failed to start VLM server.")
                 raise RuntimeError("Failed to start VLM server.")
 
-        adb = ADBDevice(serial=self.config.get("device", {}).get("serial", ""))
+        adb = ADBDevice(serial=self.config.get("device", {}).get("serial", ""), config_path=self.config_path)
         vision = VisionEngine(self.server_mgr.base_url)
 
         start_t = time.time()

@@ -66,7 +66,7 @@ def ExecuteCommandLineInterface():
 
     config_path = Path(args.config)
     config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
-    runner = TestRunner(config)
+    runner = TestRunner(config, config_path=str(config_path))
 
     console.print("\n[bold cyan]🚀 MOBILERUN TESTER[/bold cyan] [dim]- Framework di Testing Mobile[/dim]")
 
