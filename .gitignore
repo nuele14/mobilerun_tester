@@ -43,3 +43,7 @@ reddit_python_posts.json
 test/
 # agent-test-flows generated run reports
 agent-test-flows/reports/
+
+# Debug & Test Screenshots
+**/debug_screenshots/
+*.png

@@ -304,13 +304,24 @@ class ADBDevice:
         # In ADB, uno swipe stazionario per X ms equivale ad un Long Press
         self._run_cmd(["shell", "input", "swipe", str(real_x), str(real_y), str(real_x), str(real_y), str(duration_ms)])
 
+    def clear_textfield_content(self):
+        """Svuota completamente il contenuto di un campo di testo selezionando tutto ed eliminandolo."""
+        print(" 🧹 Pulizia completa del campo testo (MOVE_END -> CTRL+A -> DELETE)...")
+        # 1. Sposta il cursore alla fine del testo
+        self._run_cmd(["shell", "input", "keyevent", "123"])
+        time.sleep(0.08)
+        # 2. Seleziona tutto il contenuto (CTRL+A)
+        self._run_cmd(["shell", "input", "keyevent", "--metastate", "28672", "29"])
+        time.sleep(0.08)
+        # 3. Elimina la selezione ed invia backspace per sicurezza
+        keyevents = ["67"] * 35
+        self._run_cmd(["shell", "input", "keyevent"] + keyevents)
+        time.sleep(0.15)
+
     def input_text(self, text: str, clear_existing: bool = True):
-        """Invia testo al campo correntemente selezionato, pulendo eventuale testo precedente."""
+        """Invia testo al campo correntemente selezionato, garantendo lo svuotamento totale del testo precedente."""
         if clear_existing:
-            print(" 🧹 Pulizia testo preesistente nel campo...")
-            keyevents = ["67"] * 20
-            self._run_cmd(["shell", "input", "keyevent"] + keyevents)
-            time.sleep(0.2)
+            self.clear_textfield_content()
 
         print(f" ⌨️ [ADB Input] Inserimento testo: '{text}'")
         # Sostituisce gli spazi con %s per ADB input
