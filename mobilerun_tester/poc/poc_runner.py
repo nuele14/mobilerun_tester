@@ -130,7 +130,10 @@ class LlamaServerManager:
             "--host", self.host,
             "--port", str(self.port),
             "-c", str(self.context_size),
-            "-ngl", str(self.gpu_layers)
+            "-ngl", str(self.gpu_layers),
+            "-fa", "on",
+            "--cache-reuse", "256",
+            "-t", "8"
         ]
 
         print(f"🚀 [llama.cpp] Avvio in corso di llama-server...")
@@ -355,7 +358,7 @@ class VisionAgent:
                     ]
                 }
             ],
-            "temperature": 0.1
+            "temperature": 0.0
         }
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(self.api_url, data=data, headers={"Content-Type": "application/json"})
@@ -508,6 +511,24 @@ class VisionAgent:
             
         return coarse_x, coarse_y
 
+    def get_element_coordinates_smart(self, image_path: str, target_description: str, force_zoom: bool = False) -> Tuple[float, float]:
+        """
+        Grounding ultra-veloce ad una singola chiamata (Single-Pass Grounding).
+        Esegue lo Zoom Crop a 2 livelli SOLO se esplicitamente richiesto dallo step (force_zoom=True).
+        Questo dimezza i tempi di Vision dell'80% degli step!
+        """
+        if force_zoom:
+            return self.get_element_coordinates_with_zoom(image_path, target_description)
+
+        try:
+            # Fase 1: Chiamata singola immediata sull'immagine intera
+            x_pct, y_pct = self.get_element_coordinates(image_path, target_description)
+            print(f" ⚡ [Fast Single-Pass Vision] Coordinata trovata: ({x_pct:.1f}%, {y_pct:.1f}%)")
+            return x_pct, y_pct
+        except Exception as e:
+            print(f" ⚠️ [Fast Vision Fallback] Attivazione Zoom Crop causa: {e}")
+            return self.get_element_coordinates_with_zoom(image_path, target_description)
+
     def verify_assertion(self, image_path: str, assertion_description: str) -> Dict[str, Any]:
         """Esegue un'asserzione visiva sullo screenshot attuale."""
         prompt = (
@@ -574,6 +595,7 @@ def main():
             step_type = step.get("type")
             target = step.get("target", "")
             value = step.get("value", "")
+            use_zoom = step.get("use_zoom", False)  # Consente lo zoom mirato se specificato
 
             print(f"--- [Step {i}] Tipo: {step_type} | Target: '{target}' ---")
             
@@ -585,7 +607,7 @@ def main():
             screenshot = adb.capture_screenshot(step_img_name)
             adb.update_screen_size_from_image(screenshot)
 
-            tap_mode = step.get("tap_mode", "tap")  # Default: 'tap' singolo pulito ottimizzato per Flutter
+            tap_mode = step.get("tap_mode", "tap")
 
             if step_type in ("action_until", "long_press_until"):
                 until_condition = step.get("until_condition", "")
@@ -601,7 +623,7 @@ def main():
                 success = False
                 for attempt in range(1, max_retries + 1):
                     print(f" 🔄 Tentativo {attempt}/{max_retries} per {step_type}...")
-                    x_pct, y_pct = vision_agent.get_element_coordinates_with_zoom(screenshot, target)
+                    x_pct, y_pct = vision_agent.get_element_coordinates_smart(screenshot, target, force_zoom=use_zoom)
                     highlight_tap_on_image(screenshot, x_pct, y_pct, screenshot.replace(".png", "_tapped.png"))
                     
                     if step_type == "long_press_until":
@@ -609,7 +631,7 @@ def main():
                     else:
                         adb.robust_tap(x_pct, y_pct, mode=tap_mode)
                         
-                    time.sleep(1.8)  # Pausa assestamento animazione Flutter Dialog
+                    time.sleep(0.8)  # Pausa minima per transizione UI
                     
                     # Verifichiamo se la condizione è soddisfatta
                     after_shot = adb.capture_screenshot(f"step_{i}_until_attempt_{attempt}.png")
@@ -628,27 +650,26 @@ def main():
 
             elif step_type == "long_press":
                 duration_ms = step.get("duration_ms", 2000)
-                x_pct, y_pct = vision_agent.get_element_coordinates_with_zoom(screenshot, target)
+                x_pct, y_pct = vision_agent.get_element_coordinates_smart(screenshot, target, force_zoom=use_zoom)
                 highlight_tap_on_image(screenshot, x_pct, y_pct, screenshot.replace(".png", "_tapped.png"))
                 adb.long_press(x_pct, y_pct, duration_ms=duration_ms)
-                time.sleep(2)
+                time.sleep(1.0)
 
             elif step_type == "action":
-                # Chiedi coordinate ed esegui tap robusto
-                x_pct, y_pct = vision_agent.get_element_coordinates_with_zoom(screenshot, target)
+                # Chiedi coordinate ed esegui tap veloci
+                x_pct, y_pct = vision_agent.get_element_coordinates_smart(screenshot, target, force_zoom=use_zoom)
                 highlight_tap_on_image(screenshot, x_pct, y_pct, screenshot.replace(".png", "_tapped.png"))
                 adb.robust_tap(x_pct, y_pct, mode=tap_mode)
-                time.sleep(3.5)  # Pausa transizione UI/Network
+                time.sleep(1.0)  # Pausa ridotta da 3.5s a 1.0s
 
             elif step_type == "type_text":
-                # Trova il campo di testo con zoom, fai tap e digita
-                x_pct, y_pct = vision_agent.get_element_coordinates_with_zoom(screenshot, target)
+                # Trova il campo di testo veloce ed esegui inserimento rapido
+                x_pct, y_pct = vision_agent.get_element_coordinates_smart(screenshot, target, force_zoom=use_zoom)
                 highlight_tap_on_image(screenshot, x_pct, y_pct, screenshot.replace(".png", "_tapped.png"))
-                adb.robust_tap(x_pct, y_pct, mode="tap")  # Tap standard per posizionare il cursore di testo
-                time.sleep(0.5)
+                adb.robust_tap(x_pct, y_pct, mode="tap")
+                time.sleep(0.2)
                 adb.input_text(value)
-                time.sleep(0.8)
-                # Chiudi la tastiera SOLO se aperta per liberare i campi successivi
+                time.sleep(0.3)
                 adb.hide_keyboard_if_shown()
 
         # 7. Valutazione Asserzione Finale
