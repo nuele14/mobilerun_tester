@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validazione dell'ambiente di sviluppo per Mobilerun Tester
+Validazione dell'ambiente di sviluppo per MobileRun Tester
 """
 
 import sys
@@ -10,32 +10,33 @@ def test_imports():
     """Testa che le dipendenze chiave siano importabili"""
     try:
         import yaml
-        print("��✓ PyYAML importato correttamente")
+        print("✓ PyYAML importato correttamente")
     except ImportError as e:
-        print(f"��✗ Errore import PyYAML: {e}")
+        print(f"✗ Errore import PyYAML: {e}")
         return False
     
     try:
         from PIL import Image
-        print("��✓ Pillow importato correttamente")
+        print("✓ Pillow importato correttamente")
     except ImportError as e:
-        print(f"��✗ Errore import Pillow: {e}")
+        print(f"✗ Errore import Pillow: {e}")
         return False
         
     try:
         import imagehash
-        print("��✓ imagehash importato correttamente")
+        print("✓ imagehash importato correttamente")
     except ImportError as e:
-        print(f"��✗ Errore import imagehash: {e}")
+        print(f"✗ Errore import imagehash: {e}")
         return False
     
     # Test project modules
     try:
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'mobilerun_tester'))
-        from testing import assertions, tools, test_runner
-        print("��✓ Moduli del progetto importati correttamente")
+        from mobilerun_tester.core import adb_engine, vision_engine, server_manager, logger
+        from mobilerun_tester.runner import test_runner, report_generator
+        from mobilerun_tester.cli import main
+        print("✓ Moduli del progetto importati correttamente")
     except Exception as e:
-        print(f"��✗ Errore import moduli progetto: {e}")
+        print(f"✗ Errore import moduli progetto: {e}")
         return False
     
     return True
@@ -46,20 +47,18 @@ def test_scenario_loading():
         import yaml
         scenario_path = os.path.join(
             os.path.dirname(__file__), 
-            'mobilerun_tester', 
-            'testing', 
             'scenarios', 
-            'login.yaml'
+            'login_flow.yaml'
         )
-        with open(scenario_path, 'r') as f:
+        with open(scenario_path, 'r', encoding='utf-8') as f:
             scenario = yaml.safe_load(f)
         
-        print("��✓ Scenario di login caricato correttamente")
+        print("✓ Scenario di login caricato correttamente")
         print(f"  Nome: {scenario.get('name')}")
         print(f"  Passi: {len(scenario.get('steps', []))}")
         return True
     except Exception as e:
-        print(f"��✗ Errore caricamento scenario: {e}")
+        print(f"✗ Errore caricamento scenario: {e}")
         return False
 
 def main():
@@ -74,10 +73,10 @@ def main():
     
     print()
     if success:
-        print("���🎉 VALIDAZIONE COMPLETATA - Ambiente pronto!")
+        print("🎉 VALIDAZIONE COMPLETATA - Ambiente pronto!")
         return 0
     else:
-        print("��❌ VALIDAZIONE FALLITA - Controllare gli errori sopra")
+        print("❌ VALIDAZIONE FALLITA - Controllare gli errori sopra")
         return 1
 
 if __name__ == "__main__":
