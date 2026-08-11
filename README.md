@@ -1,102 +1,219 @@
 # 🚀 MobileRun Tester
 
-**MobileRun Tester** è un framework di testing E2E visivo ed autonomo per applicazioni mobile (**Flutter & Native Android**), alimentato da modelli di Vision-Language (**VLM**) eseguiti in locale.
+**MobileRun Tester** è un framework di testing automatizzato E2E visivo per applicazioni mobile (**Flutter & Native Android**), basato su modelli Vision-Language (**VLM**) eseguiti in locale.
+
+Il sistema esegue un grounding visivo a due livelli (**Coarse + Fine Bounding Box Zoom**) ed interagisce direttamente con il dispositivo Android via ADB, senza dipendere da servizi cloud esterni o ID di elemento hardcodati nel codice.
 
 ---
 
-## ⚡ Caratteristiche Principali
-
-- 🧠 **Grounding Visivo Locale (VLM)**: Utilizza `llama-server` in locale con modelli come **Qwen2-VL** e **UI-TARS-7B**, senza costi API o dipendenze da server cloud esterni.
-- 🚀 **Accelerazione Hardware GPU**: Sfrutta le opzioni Metal GPU per macOS (`-ngl 99`), **Flash Attention** (`-fa on`) e riutilizzo della cache KV (`--cache-reuse 256`).
-- 📐 **Adattamento Dinamico dello Schermo**: Rileva l'orientamento reale dello schermo ad ogni screenshot per garantire la precisione sia in **Landscape ($1920 \times 1200$)** sia in **Portrait ($1200 \times 1920$)**.
-- 🧹 **Sanitizzazione del Testo**: Pulizia avanzata dei campi prima di ogni digitazione mediante sequenza da tastiera nativa (`MOVE_END` $\rightarrow$ `CTRL+A` $\rightarrow$ `DELETE`).
-- 📊 **Report HTML Visivi & Master Dashboard**: Generazione automatica di report HTML interattivi con KPI, evidenziatori rossi dei tocchi ed esiti delle asserzioni.
-
----
-
-## 🏗️ Architettura del Framework
-
-```text
-mobilerun_tester/
-├── config/
-│   └── default_config.yaml       # Configurazione globale (VLM, ADB, Timeouts)
-├── core/
-│   ├── adb_engine.py             # Primitive ADB native e dinamica schermi
-│   ├── vision_engine.py          # Grounding Single-Pass, Zoom Crop ed Asserzioni
-│   ├── server_manager.py         # Lifecycle del daemon llama-server
-│   └── scenario_parser.py        # Parser YAML con sostituzione ${ENV_VAR}
-├── runner/
-│   ├── test_runner.py            # Orchestratore step di test e telemetria
-│   └── report_generator.py       # Generatore di Report HTML e Dashboard
-├── cli/
-│   └── main.py                   # CLI ed esecutore Batch di test
-└── scenarios/                    # Cartella degli scenari di test YAML
-    └── login_flow.yaml
-```
+## 📋 Indice
+1. [Componenti di Sistema Richiesti](#-componenti-di-sistema-richiesti)
+2. [Modelli VLM Consigliati](#-modelli-vlm-consigliati)
+3. [Setup dell'Ambiente e Dipendenze](#-setup-dellambiente-e-dipendenze)
+4. [Validazione Automatica dell'Ambiente](#-validazione-automatica-dellambiente)
+5. [Dove Impostare la Configurazione](#-dove-impostare-la-configurazione)
+6. [Dove Inserire e Creare gli Scenari di Test](#-dove-inserire-e-creare-gli-scenari-di-test)
+7. [Esecuzione dei Test (CLI)](#-esecuzione-dei-test-cli)
+8. [Report ed Ispezione Log](#-report-ed-ispezione-log)
 
 ---
 
-## 🚀 Quickstart & Utilizzo
+## 🛠️ Componenti di Sistema Richiesti
 
-### 1. Esecuzione Batch Predefinita (Tutti gli scenari)
+Prima di avviare **MobileRun Tester**, assicurati che siano installati i seguenti componenti di sistema sul tuo computer:
 
-Per eseguire automaticamente tutti i file `.yaml` contenuti nella cartella `scenarios/`:
+### 1. Android Debug Bridge (ADB)
+Richiesto per comunicare con dispositivi fisici o emulatori Android.
+
+* **macOS**:
+  ```bash
+  brew install android-platform-tools
+  ```
+* **Linux (Ubuntu/Debian)**:
+  ```bash
+  sudo apt update && sudo apt install -y android-tools-adb
+  ```
+* **Windows**:
+  ```powershell
+  winget install Google.PlatformTools
+  # Oppure tramite Scoop:
+  scoop install adb
+  ```
+
+### 2. llama.cpp (`llama-server`)
+Richiesto per eseguire l'infezezza locale multimodale dei modelli VLM con accelerazione GPU.
+
+* **macOS (con accelerazione Metal GPU)**:
+  ```bash
+  brew install llama.cpp
+  ```
+* **Linux / Windows**:
+  Scarica l'eseguibile precompilato `llama-server` dalle [Release Ufficiali di llama.cpp su GitHub](https://github.com/ggerganov/llama.cpp/releases) ed inseriscilo nel `PATH` di sistema o specifica il percorso completo nel file di configurazione.
+
+---
+
+## 🧠 Modelli VLM Consigliati
+
+Per garantire la massima precisione nell'individuazione visiva dei bottoni e campi di testo (Grounding), si consiglia l'uso dei seguenti modelli multimodali in formato GGUF:
+
+| Tipo | Modello Consigliato | Descrizione |
+| :--- | :--- | :--- |
+| **Modello VLM (GGUF)** | `UI-TARS-7B-DPO-Q4_K_M.gguf` | Modello specializzato per il grounding di interfacce GUI e mobile. |
+| **Proiettore Multimodale (mmproj)** | `mmproj-UI-TARS-7B-f16.gguf` | Proiettore di visione associato al modello UI-TARS. |
+| **Alternativa VLM** | `Qwen2-VL-7B-Instruct-Q4_K_M.gguf` | Modello generico per Vision-Language di alta qualità. |
+
+### 📁 Dove Posizionare i Modelli
+Si consiglia di creare una cartella dedicata nella directory home utente, ad esempio:
+* **macOS / Linux**: `~/.modelli_llm/` (es: `/Users/nomeutente/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf`)
+* **Windows**: `C:\modelli_llm\`
+
+---
+
+## 📦 Setup dell'Ambiente e Dipendenze
+
+### 1. Creazione del Virtual Environment
+Crea ed attiva un ambiente virtuale Python (versione Python $\ge 3.11$):
 
 ```bash
-python -m mobilerun_tester.main
+# Su macOS / Linux:
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Su Windows (PowerShell):
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-Alla fine dell'esecuzione verranno generati i report individuali e la dashboard globale in `reports/master_report.html`.
+*(In alternativa puoi usare `uv venv` per una creazione istantanea).*
 
-### 2. Esecuzione di uno Scenario Singolo
-
-Per eseguire uno specifico scenario YAML:
+### 2. Installazione delle Dipendenze Python
+Installa tutti i pacchetti necessari specificati nel file [`requirements.txt`](requirements.txt):
 
 ```bash
-python -m mobilerun_tester.main scenarios/login_flow.yaml
+pip install -r requirements.txt
 ```
 
 ---
 
-## 📝 Esempio di Scenario (`scenarios/login_flow.yaml`)
+## 🔍 Validazione Automatica dell'Ambiente
+
+Il progetto include uno script di diagnostica completo ([`validate_setup.py`](validate_setup.py)) che controlla se tutti i componenti di sistema, l'ambiente Python, l'eseguibile `llama-server`, la connessione ADB ed i file `.gguf` dei modelli sono pronti all'uso:
+
+```bash
+python validate_setup.py
+```
+
+### Controlli effettuati da `validate_setup.py`:
+1. **Dipendenze Python**: `PyYAML`, `Pillow`, `ImageHash`, `Rich`, `HTTPX`.
+2. **Moduli Interni Framework**: `mobilerun_tester.core`, `runner`, `cli`.
+3. **ADB & Dispositivi**: Presenza del comando `adb` e presenza di uno smartphone/emulatore Android connesso.
+4. **VLM Engine**: Presenza dell'eseguibile `llama-server` e relativo stato health.
+5. **Modelli VLM**: Verifica esistenza su disco dei file `.gguf` del modello e dell'mmproj configurati.
+6. **Scenari**: Presenza di file `.yaml` validi nella cartella `scenarios/`.
+
+---
+
+## ⚙️ Dove Impostare la Configurazione
+
+La configurazione globale del framework si trova in:
+👉 **[`mobilerun_tester/config/default_config.yaml`](mobilerun_tester/config/default_config.yaml)**
+
+### Parametri Principali
 
 ```yaml
-name: "Login Flow Scenario"
-description: "Configurazione URL API ed autenticazione utente"
+server:
+  host: "127.0.0.1"
+  port: 8080
+  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"       # Percorso al modello GGUF
+  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"      # Percorso al proiettore mmproj
+  binary: "llama-server"                                        # Nome o percorso all'eseguibile
+  context_size: 4096
+  gpu_layers: 99                                                # Layer da caricare su GPU (-ngl 99)
+  threads: 8
+  flash_attn: true                                              # Flash Attention (-fa on)
+  auto_start: true                                              # Avvia il server automaticamente se non attivo
+
+device:
+  serial: ""                                                    # Serial ADB (vuoto per rilevamento automatico)
+  show_touches: true                                            # Attiva l'indicatore bianco dei tocchi a schermo
+
+runner:
+  default_max_retries: 3
+  debug_screenshots_dir: "reports/screenshots"
+  reports_dir: "reports"
+```
+
+---
+
+## 📂 Dove Inserire e Creare gli Scenari di Test
+
+Tutti gli scenari di test in formato YAML vanno inseriti nella cartella:
+👉 **[`scenarios/`](scenarios/)** (es: `scenarios/login_flow.yaml`)
+
+### Struttura di uno Scenario YAML
+
+```yaml
+name: "Login Flow Scenario - Production Suite"
+description: "Scenario di test automatico per la configurazione dell'URL API ed il login"
 
 steps:
   - type: "action_until"
     target: "Icona dell'ingranaggio (Impostazioni) in alto a destra dello schermo"
-    until_condition: "È visibile a schermo il dialogo 'Insert API URL and store code'."
+    until_condition: "È visibile a schermo un dialogo con titolo 'Insert API URL'."
+    max_retries: 3
 
   - type: "type_text"
-    target: "Campo di testo per l'URL API nel dialogo"
+    target: "Campo di testo per l'URL API"
     value: "betacc.planetps.it"
 
   - type: "action"
-    target: "Pulsante 'Save' nel dialogo"
+    target: "Pulsante 'Save' per salvare le impostazioni"
 
   - type: "type_text"
-    target: "Area di testo per Username"
-    value: "${USER_EMAIL}"
+    target: "Area di testo per lo Username o Email"
+    value: "${USER_EMAIL}"                                      # Supporta variabili d'ambiente
 
   - type: "type_text"
-    target: "Area di testo per Password"
+    target: "Area di testo per la Password"
     value: "${USER_PASSWORD}"
 
   - type: "action"
-    target: "Pulsante azzurro 'Login'"
+    target: "Pulsante azzurro con scritto 'Login'"
 
 assertion:
-  description: "Si è aperto il catalogo/home page dell'applicazione."
+  description: "La schermata di Login è scomparsa e si è aperto il catalogo dell'applicazione."
 ```
+
+### Tipi di Step Disponibili:
+* `action`: Grounding VLM + Tap singolo sull'elemento specificato in `target`.
+* `type_text`: Grounding VLM + Selezione + Pulizia automatica + Inserimento del testo specificato in `value`.
+* `action_until`: Ripete il tap fino a quando la condizione `until_condition` non risulta vera.
+* `long_press_until`: Esegue la pressione prolungata (Long Press) fino al soddisfacimento di `until_condition`.
+
+---
+
+## 🏃 Esecuzione dei Test (CLI)
+
+### 1. Esecuzione Batch (Tutti gli scenari in `scenarios/`)
+```bash
+python -m mobilerun_tester.cli.main
+```
+
+### 2. Esecuzione di uno Scenario Specifico
+```bash
+python -m mobilerun_tester.cli.main scenarios/login_flow.yaml
+```
+
+---
+
+## 📊 Report ed Ispezione Log
+
+Dopo l'esecuzione di un test, il framework genera automaticamente:
+1. **Report HTML Interattivi**: Salvati nella cartella `reports/` (es: `reports/login_flow_report.html` e dashboard `reports/master_report.html`). Contengono gli screenshot con l'overlay del mirino rosso e le etichette dei tocchi.
+2. **File di Log Dettagliati**: Salvati nella cartella `logs/run_YYYYMMDD_HHMMSS.log` (automaticamente ignorata da git), contenenti tutte le chiamate ADB, risposte JSON dei modelli e stack trace per il debugging.
 
 ---
 
 ## 📄 Licenza
 
-Questo progetto è distribuito sotto la licenza **MIT License**.
-Per maggiori dettagli, consulta il file [LICENSE](LICENSE).
-
-Copyright (c) 2026 Emanuele Coltro  
-Copyright (c) 2025 Niels Schmidt
+Distribuito sotto licenza **MIT License**. Per maggiori dettagli, consulta il file [LICENSE](LICENSE).
