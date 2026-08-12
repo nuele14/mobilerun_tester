@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "created_at_ms": 1786524581450,
+  "scenario_name": "Login Flow Test",
+  "device": {
+    "width": 1080,
+    "height": 1920,
+    "serial": "R52M904J1QM"
+  },
+  "actions": [
+    {
+      "step_index": 1,
+      "action_type": "action",
+      "target_description": "Gear Icon",
+      "coordinates": {
+        "x_pct": 92.5,
+        "y_pct": 8.1
+      },
+      "pre_state": {
+        "screen_hash": "1234567890abcdef"
+      }
+    }
+  ]
+}

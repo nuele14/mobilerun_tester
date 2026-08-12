@@ -61,6 +61,16 @@ def ExecuteCommandLineInterface():
         default="reports/latest_report.html",
         help="Percorso di destinazione per il Report HTML visivo"
     )
+    parser.add_argument(
+        "--save-macro",
+        action="store_true",
+        help="Registra e salva automaticamente la sequenza di azioni in un file JSON di macro"
+    )
+    parser.add_argument(
+        "--use-macro",
+        action="store_true",
+        help="Abilita l'esecutore ibrido Macro Fast-Path con fallback automatico al VLM"
+    )
 
     args = parser.parse_args()
 
@@ -94,7 +104,7 @@ def ExecuteCommandLineInterface():
 
         for scenario_file in scenario_files:
             try:
-                summary = runner.ExecuteTestScenario(str(scenario_file))
+                summary = runner.ExecuteTestScenario(str(scenario_file), save_macro=args.save_macro, use_macro=args.use_macro)
                 suite_summaries.append(summary)
                 
                 report_name = f"reports/{scenario_file.stem}_report.html"
@@ -123,7 +133,7 @@ def ExecuteCommandLineInterface():
             sys.exit(1)
 
         try:
-            summary = runner.ExecuteTestScenario(str(scenario_path))
+            summary = runner.ExecuteTestScenario(str(scenario_path), save_macro=args.save_macro, use_macro=args.use_macro)
             ReportGenerator.GenerateSingleScenarioHtmlReport(summary, args.html_report)
 
             if not summary.get("passed", False):

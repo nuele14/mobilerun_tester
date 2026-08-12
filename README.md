@@ -213,6 +213,21 @@ python -m mobilerun_tester.cli.main
 python -m mobilerun_tester.cli.main scenarios/login_flow.yaml
 ```
 
+### 3. ⚡ Registrazione ed Esecuzione Ibrida con Macro (`--save-macro` e `--use-macro`)
+Per registrare i tocchi e velocizzare l'esecuzione saltando le chiamate VLM quando la schermata è invariata:
+
+* **Registrazione ed esportazione Macro JSON**:
+  ```bash
+  python -m mobilerun_tester.cli.main scenarios/login_flow.yaml --save-macro
+  ```
+  Salva la sequenza delle azioni, coordinate percentuali ed hash visivi in `scenarios/macros/login_flow.macro.json`.
+
+* **Esecuzione Ibrida (Fast-Path + Fallback VLM)**:
+  ```bash
+  python -m mobilerun_tester.cli.main scenarios/login_flow.yaml --use-macro
+  ```
+  Confronta lo schermo attuale con l'hash salvato: se la schermata coincide ($\ge 85\%$), esegue il tocco in **~100ms** senza impegnare il VLM; se lo schermo differisce, passa automaticamente la palla all'IA visiva (**VLM 2-Pass Zoom Crop**).
+
 ---
 
 ## 📊 Report ed Ispezione Log
