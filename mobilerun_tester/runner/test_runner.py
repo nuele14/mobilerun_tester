@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from mobilerun_tester.core.adb_engine import ADBDevice
 from mobilerun_tester.core.vision_engine import VisionEngine, DrawTapTargetHighlight
 from mobilerun_tester.core.server_manager import LlamaServerManager
@@ -21,13 +21,15 @@ class TestRunner:
         self.reports_dir.mkdir(parents=True, exist_ok=True)
         self.screenshots_dir.mkdir(parents=True, exist_ok=True)
 
-    def ExecuteTestScenario(self, scenario_path: str, save_macro: bool = False, use_macro: bool = False) -> Dict[str, Any]:
+    def ExecuteTestScenario(self, scenario_path: str, save_macro: bool = False, use_macro: bool = False, continue_on_failure: Optional[bool] = None) -> Dict[str, Any]:
         """[Function] Runs complete scenario step loop returning telemetry dictionary."""
         logger = GetLogger()
         scenario = ScenarioParser.LoadTestScenario(scenario_path)
         scenario_name = scenario.get("name", "Unknown Scenario")
         
-        logger.info(f"Starting test scenario: '{scenario_name}' ({scenario_path}) [save_macro={save_macro}, use_macro={use_macro}]")
+        continue_on_fail = scenario.get("continue_on_failure", False) if continue_on_failure is None else continue_on_failure
+
+        logger.info(f"Starting test scenario: '{scenario_name}' ({scenario_path}) [save_macro={save_macro}, use_macro={use_macro}, continue_on_failure={continue_on_fail}]")
         console.print(f"\n📋 [bold yellow]Scenario:[/bold yellow] [bold white]{scenario_name}[/bold white]")
 
         macro_mgr = MacroManager()
@@ -300,6 +302,13 @@ class TestRunner:
                         "attempts": attempt_traces
                     } if (not step_passed or attempt_traces) else None
                 })
+
+                if not step_passed:
+                    if not continue_on_fail:
+                        console.print(f" [bold red]🛑 Interruzione dello scenario al passo {i} (continue_on_failure=false)[/bold red]")
+                        break
+                    else:
+                        console.print(f" [dim]ℹ️ Step {i} fallito ma continue_on_failure=true -> Proseguo con lo step successivo...[/dim]")
 
             assertion = scenario.get("assertion", {})
             ast_passed, ast_reason, final_shot = True, "No final assertion defined.", ""

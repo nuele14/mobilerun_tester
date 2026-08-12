@@ -43,22 +43,30 @@ class ScenarioParser:
             raise FileNotFoundError(f"Suite manifest not found: {scenario_path}")
         d = ScenarioParser.LoadYamlDocument(scenario_path)
         raw_list = d.get("scenarios") or d.get("include_scenarios") or []
+        suite_continue_on_failure = bool(d.get("continue_on_failure", False))
         scenarios_list = []
 
         for item in raw_list:
             if isinstance(item, str):
-                scenarios_list.append({"file": item, "use_macro": False, "save_macro": False})
+                scenarios_list.append({
+                    "file": item,
+                    "use_macro": False,
+                    "save_macro": False,
+                    "continue_on_failure": suite_continue_on_failure
+                })
             elif isinstance(item, dict):
                 file_path = item.get("file") or item.get("scenario") or item.get("path", "")
                 scenarios_list.append({
                     "file": file_path,
                     "use_macro": bool(item.get("use_macro", False)),
-                    "save_macro": bool(item.get("save_macro", False))
+                    "save_macro": bool(item.get("save_macro", False)),
+                    "continue_on_failure": bool(item.get("continue_on_failure", suite_continue_on_failure))
                 })
 
         return {
             "name": d.get("name", p.stem),
             "description": d.get("description", ""),
+            "continue_on_failure": suite_continue_on_failure,
             "scenarios": scenarios_list
         }
 
@@ -74,6 +82,7 @@ class ScenarioParser:
         
         expanded_steps = ScenarioParser.ExpandIncludedScenarioSteps(d["steps"], base_dir=p.parent)
         d["steps"] = ScenarioParser.ResolveEnvironmentVariables(expanded_steps)
+        d["continue_on_failure"] = bool(d.get("continue_on_failure", False))
         return d
 
     @staticmethod

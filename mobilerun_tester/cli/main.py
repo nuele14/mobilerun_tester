@@ -71,6 +71,11 @@ def ExecuteCommandLineInterface():
         action="store_true",
         help="Abilita l'esecutore ibrido Macro Fast-Path con fallback automatico al VLM"
     )
+    parser.add_argument(
+        "--continue-on-failure",
+        action="store_true",
+        help="Prosegue con gli step o sotto-scenari successivi anche se uno step o asserzione fallisce"
+    )
 
     args = parser.parse_args()
 
@@ -104,7 +109,12 @@ def ExecuteCommandLineInterface():
 
         for scenario_file in scenario_files:
             try:
-                summary = runner.ExecuteTestScenario(str(scenario_file), save_macro=args.save_macro, use_macro=args.use_macro)
+                summary = runner.ExecuteTestScenario(
+                    str(scenario_file),
+                    save_macro=args.save_macro,
+                    use_macro=args.use_macro,
+                    continue_on_failure=args.continue_on_failure
+                )
                 suite_summaries.append(summary)
                 
                 report_name = f"reports/{scenario_file.stem}_report.html"
@@ -113,10 +123,15 @@ def ExecuteCommandLineInterface():
 
                 if not summary.get("passed", False):
                     all_passed = False
+                    if not args.continue_on_failure:
+                        console.print(f"[bold red]🛑 Arresto esecuzione suite batch: scenario {scenario_file.name} fallito (continue_on_failure=false)[/bold red]")
+                        break
             except Exception as e:
                 logger.error(f"Error executing scenario {scenario_file}: {e}", exc_info=True)
                 console.print(f"[bold red]❌ Errore durante l'esecuzione di {scenario_file}: {e}[/bold red]")
                 all_passed = False
+                if not args.continue_on_failure:
+                    break
 
         ReportGenerator.GenerateMasterSuiteHtmlReport(suite_summaries, "reports/master_report.html")
 
@@ -137,8 +152,9 @@ def ExecuteCommandLineInterface():
             suite_manifest = ScenarioParser.LoadSuiteManifest(str(scenario_path))
             suite_name = suite_manifest.get("name", scenario_path.stem)
             sub_scenarios = suite_manifest.get("scenarios", [])
+            suite_continue_on_fail = args.continue_on_failure or suite_manifest.get("continue_on_failure", False)
 
-            console.print(f"\n[bold yellow]🏆 Esecuzione Suite Manifest:[/bold yellow] [bold white]{suite_name}[/bold white] [dim]({len(sub_scenarios)} scenari ordinati)[/dim]")
+            console.print(f"\n[bold yellow]🏆 Esecuzione Suite Manifest:[/bold yellow] [bold white]{suite_name}[/bold white] [dim]({len(sub_scenarios)} scenari ordinati, continue_on_failure={suite_continue_on_fail})[/dim]")
             
             suite_summaries = []
             all_passed = True
@@ -147,6 +163,7 @@ def ExecuteCommandLineInterface():
                 sub_file = item.get("file")
                 use_m = args.use_macro or item.get("use_macro", False)
                 save_m = args.save_macro or item.get("save_macro", False)
+                item_continue_on_fail = args.continue_on_failure or item.get("continue_on_failure", suite_continue_on_fail)
 
                 sub_p = Path(sub_file)
                 if not sub_p.exists():
@@ -155,10 +172,17 @@ def ExecuteCommandLineInterface():
                 if not sub_p.exists():
                     console.print(f"[bold red]❌ Errore: Sotto-scenario '{sub_file}' non trovato![/bold red]")
                     all_passed = False
+                    if not item_continue_on_fail:
+                        break
                     continue
 
                 try:
-                    summary = runner.ExecuteTestScenario(str(sub_p), save_macro=save_m, use_macro=use_m)
+                    summary = runner.ExecuteTestScenario(
+                        str(sub_p),
+                        save_macro=save_m,
+                        use_macro=use_m,
+                        continue_on_failure=item_continue_on_fail
+                    )
                     suite_summaries.append(summary)
 
                     report_name = f"reports/{sub_p.stem}_report.html"
@@ -167,10 +191,17 @@ def ExecuteCommandLineInterface():
 
                     if not summary.get("passed", False):
                         all_passed = False
+                        if not item_continue_on_fail:
+                            console.print(f"[bold red]🛑 Arresto Suite Manifest: sotto-scenario '{sub_p.name}' fallito (continue_on_failure=false)[/bold red]")
+                            break
+                        else:
+                            console.print(f"[dim]ℹ️ Sotto-scenario '{sub_p.name}' fallito ma continue_on_failure=true -> Proseguo col successivo...[/dim]")
                 except Exception as e:
                     logger.error(f"Error executing sub-scenario {sub_p}: {e}", exc_info=True)
                     console.print(f"[bold red]❌ Errore durante l'esecuzione di {sub_p}: {e}[/bold red]")
                     all_passed = False
+                    if not item_continue_on_fail:
+                        break
 
             ReportGenerator.GenerateMasterSuiteHtmlReport(suite_summaries, "reports/master_report.html")
 
@@ -180,7 +211,12 @@ def ExecuteCommandLineInterface():
         # Mode 2B: Single Scenario Execution
         else:
             try:
-                summary = runner.ExecuteTestScenario(str(scenario_path), save_macro=args.save_macro, use_macro=args.use_macro)
+                summary = runner.ExecuteTestScenario(
+                    str(scenario_path),
+                    save_macro=args.save_macro,
+                    use_macro=args.use_macro,
+                    continue_on_failure=args.continue_on_failure
+                )
                 ReportGenerator.GenerateSingleScenarioHtmlReport(summary, args.html_report)
 
                 if not summary.get("passed", False):
