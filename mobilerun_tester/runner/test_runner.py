@@ -295,11 +295,11 @@ class TestRunner:
                 })
 
             assertion = scenario.get("assertion", {})
-            ast_passed, ast_reason = True, "No final assertion defined."
+            ast_passed, ast_reason, final_shot = True, "No final assertion defined.", ""
             if assertion:
                 desc = assertion.get("description", "")
                 with StatusSpinner(f"🔍 Verifica asserzione finale visiva: '{desc}'..."):
-                    final_shot = str(self.screenshots_dir / "final_assertion_screen.png")
+                    final_shot = str(self.screenshots_dir / f"final_assertion_{Path(scenario_path).stem}.png")
                     adb.CaptureScreenBuffer(final_shot)
                     res = vision.VerifyScreenAssertion(final_shot, desc)
                     ast_passed = bool(res.get("pass"))
@@ -333,7 +333,11 @@ class TestRunner:
             return {
                 "scenario_name": scenario_name, "passed": overall_passed,
                 "total_duration_seconds": tot_dur, "steps": step_results,
-                "final_assertion": {"passed": ast_passed, "reason": ast_reason},
+                "final_assertion": {
+                    "passed": ast_passed,
+                    "reason": ast_reason,
+                    "screenshot": final_shot
+                },
                 "telemetry_summary": {
                     "total_vlm_ms": total_vlm_ms,
                     "total_adb_ms": total_adb_ms,

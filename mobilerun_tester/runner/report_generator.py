@@ -118,6 +118,9 @@ class ReportGenerator:
         final_assertion = summary.get("final_assertion", {})
         final_passed = final_assertion.get("passed", False)
         final_badge = '<span class="step-badge pass">PASS</span>' if final_passed else '<span class="step-badge fail">FAIL</span>'
+        final_shot = final_assertion.get("screenshot", "")
+        rel_final_shot = os.path.relpath(final_shot, out_file.parent) if final_shot and os.path.exists(final_shot) else ""
+        final_img_html = f'<div class="img-container" style="margin-top:14px;"><strong>Screenshot Valutato dall\'Asserzione:</strong><br><a href="{rel_final_shot}" target="_blank"><img src="{rel_final_shot}" class="step-img" alt="Final Assertion Screenshot"></a></div>' if rel_final_shot else ''
 
         html_content = f"""<!DOCTYPE html>
 <html lang="it">
@@ -244,6 +247,7 @@ class ReportGenerator:
         <div class="assertion-card {'fail' if not final_passed else ''}">
             <h3>🔍 Asserzione Visiva Finale: {final_badge}</h3>
             <p><strong>Esito:</strong> {final_assertion.get('reason')}</p>
+            {final_img_html}
         </div>
     </div>
 </body>
