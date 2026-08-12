@@ -307,6 +307,7 @@ class TestRunner:
                 desc = assertion.get("description", "")
                 wait_sec = float(assertion.get("wait_seconds") or assertion.get("wait") or 0.0)
                 if wait_sec > 0:
+                    console.print(f" ⏳ [bold cyan]Attesa di {wait_sec}s per completamento animazioni/transizioni UI...[/bold cyan]")
                     with StatusSpinner(f"⏳ Attesa di {wait_sec}s prima dell'asserzione finale visiva..."):
                         time.sleep(wait_sec)
 
