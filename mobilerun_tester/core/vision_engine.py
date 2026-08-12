@@ -11,6 +11,7 @@ Exact precision restoration matching commit 90e2091df90e36f30374960c2f3353a5a563
 import base64
 import json
 import re
+import time
 import urllib.request
 from typing import Tuple, Dict, Any
 from PIL import Image, ImageDraw
@@ -127,7 +128,7 @@ class VisionEngine:
 
         raise ValueError(f"Impossibile estrarre le coordinate dalla risposta: {resp}")
 
-    def PredictCoordinatesWithZoom(self, img_path: str, target_desc: str, pad_pct: float = 12.0) -> Tuple[float, float]:
+    def PredictCoordinatesWithZoom(self, img_path: str, target_desc: str, pad_pct: float = 12.0) -> Tuple[float, float, Dict[str, Any]]:
         """
         [Function] Grounding a 2 livelli (Coarse + Fine Bounding Box Zoom) da commit 90e2091:
         1. Trova le coordinate approssimative sull'immagine intera (Coarse).
@@ -136,8 +137,13 @@ class VisionEngine:
         4. Trasforma le coordinate locali della sotto-immagine in coordinate globali dello schermo.
         """
         logger = GetLogger()
+        start_p1 = time.time()
         coarse_x, coarse_y = self.PredictElementCoordinates(img_path, target_desc)
-        logger.info(f"🔍 [Zoom Phase 1] Coordinata globale approssimativa: ({coarse_x:.1f}%, {coarse_y:.1f}%)")
+        pass1_ms = int((time.time() - start_p1) * 1000)
+        logger.info(f"🔍 [Zoom Phase 1] Coordinata globale approssimativa: ({coarse_x:.1f}%, {coarse_y:.1f}%) [{pass1_ms}ms]")
+
+        pass2_ms = 0
+        raw_response = ""
 
         try:
             img = Image.open(img_path)
@@ -166,8 +172,10 @@ class VisionEngine:
                 f'{{"xmin": float, "ymin": float, "xmax": float, "ymax": float, "x": float, "y": float}}\n'
                 f"Nessun altro testo prima o dopo il JSON."
             )
+            start_p2 = time.time()
             raw_response = self.DispatchVlmQuery(cropped_path, fine_prompt)
-            logger.debug(f"🤖 [LLM Fine Zoom Response]: {raw_response.strip()}")
+            pass2_ms = int((time.time() - start_p2) * 1000)
+            logger.debug(f"🤖 [LLM Fine Zoom Response]: {raw_response.strip()} [{pass2_ms}ms]")
 
             sub_x, sub_y = 50.0, 50.0
             found_coords = False
@@ -207,27 +215,56 @@ class VisionEngine:
                         sub_y /= 10.0
                     found_coords = True
 
-            # Salva l'evidenziazione del tocco sulla sotto-immagine zoomata
-            DrawTapTargetHighlight(cropped_path, sub_x, sub_y, cropped_path.replace(".png", "_tapped.png"), target_desc=target_desc)
+            cropped_tapped_path = cropped_path.replace(".png", "_tapped.png")
+            DrawTapTargetHighlight(cropped_path, sub_x, sub_y, cropped_tapped_path, target_desc=target_desc)
 
             # Trasformazione da coordinate locali del crop a coordinate globali dello schermo
             final_global_x = crop_xmin_pct + (sub_x / 100.0) * (crop_xmax_pct - crop_xmin_pct)
             final_global_y = crop_ymin_pct + (sub_y / 100.0) * (crop_ymax_pct - crop_ymin_pct)
 
             logger.info(f"🎯 [Zoom Refinement Complete] Coord Locale: ({sub_x:.1f}%, {sub_y:.1f}%) -> Coord Globale Affinata: ({final_global_x:.2f}%, {final_global_y:.2f}%)")
-            return final_global_x, final_global_y
+            metrics = {
+                "pass1_ms": pass1_ms,
+                "pass2_ms": pass2_ms,
+                "vlm_total_ms": pass1_ms + pass2_ms,
+                "coarse_x": coarse_x,
+                "coarse_y": coarse_y,
+                "sub_x": sub_x,
+                "sub_y": sub_y,
+                "final_x": final_global_x,
+                "final_y": final_global_y,
+                "cropped_path": cropped_path,
+                "cropped_tapped_path": cropped_tapped_path,
+                "raw_response": raw_response
+            }
+            return final_global_x, final_global_y, metrics
 
         except Exception as e:
             logger.warning(f"⚠️ [Zoom Warning] Impossibile eseguire l'affinamento dello zoom ({e}), uso coordinata globale standard.")
 
-        return coarse_x, coarse_y
+        metrics = {
+            "pass1_ms": pass1_ms,
+            "pass2_ms": pass2_ms,
+            "vlm_total_ms": pass1_ms + pass2_ms,
+            "coarse_x": coarse_x,
+            "coarse_y": coarse_y,
+            "sub_x": 50.0,
+            "sub_y": 50.0,
+            "final_x": coarse_x,
+            "final_y": coarse_y,
+            "cropped_path": "",
+            "cropped_tapped_path": "",
+            "raw_response": raw_response
+        }
+        return coarse_x, coarse_y, metrics
 
-    def PredictCoordinatesFast(self, img_path: str, target_desc: str, force_zoom: bool = True) -> Tuple[float, float]:
+    def PredictCoordinatesFast(self, img_path: str, target_desc: str, force_zoom: bool = True) -> Tuple[float, float, Dict[str, Any]]:
         """[Function] Always uses 2-Pass Bounding-Box Zoom Grounding for exact target accuracy."""
         return self.PredictCoordinatesWithZoom(img_path, target_desc)
 
     def VerifyScreenAssertion(self, img_path: str, assertion_desc: str) -> Dict[str, Any]:
         """[Function] Evaluates visual assertion matching commit 90e2091."""
+        start_t = time.time()
         prompt = (
             f"Verifica se la seguente asserzione è vera basandoti sullo screenshot attuale:\n"
             f"Asserzione: '{assertion_desc}'.\n"
@@ -236,6 +273,10 @@ class VisionEngine:
             f"Nessun altro testo."
         )
         raw_response = self.DispatchVlmQuery(img_path, prompt)
-        GetLogger().debug(f"🤖 [LLM Assertion Response]: {raw_response.strip()}")
+        vlm_ms = int((time.time() - start_t) * 1000)
+        GetLogger().debug(f"🤖 [LLM Assertion Response]: {raw_response.strip()} [{vlm_ms}ms]")
         m = re.search(r"\{.*\}", raw_response, re.DOTALL)
-        return json.loads(m.group(0)) if m else {"pass": False, "reason": f"Risposta LLM non formattata correttamente: {raw_response}"}
+        res = json.loads(m.group(0)) if m else {"pass": False, "reason": f"Risposta LLM non formattata correttamente: {raw_response}"}
+        res["vlm_ms"] = vlm_ms
+        res["raw_response"] = raw_response
+        return res

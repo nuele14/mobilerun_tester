@@ -45,6 +45,7 @@ test/
 # agent-test-flows generated run reports
 agent-test-flows/reports/
 
-# Debug & Test Screenshots
+# Debug & Test Screenshots e Report
 **/debug_screenshots/
+reports/
 *.png

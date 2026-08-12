@@ -98,6 +98,7 @@ def ExecuteCommandLineInterface():
                 suite_summaries.append(summary)
                 
                 report_name = f"reports/{scenario_file.stem}_report.html"
+                summary["report_file"] = f"{scenario_file.stem}_report.html"
                 ReportGenerator.GenerateSingleScenarioHtmlReport(summary, report_name)
 
                 if not summary.get("passed", False):

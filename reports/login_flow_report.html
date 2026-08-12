@@ -12,6 +12,7 @@
             --text-color: #f8fafc;
             --accent-pass: #10b981;
             --accent-fail: #ef4444;
+            --accent-info: #38bdf8;
             --text-muted: #94a3b8;
         }
         body {
@@ -38,6 +39,21 @@
         .badge.pass { background: rgba(16, 185, 129, 0.2); color: var(--accent-pass); border: 1px solid var(--accent-pass); }
         .badge.fail { background: rgba(239, 68, 68, 0.2); color: var(--accent-fail); border: 1px solid var(--accent-fail); }
         
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        .kpi-val { font-size: 24px; font-weight: 700; margin-top: 4px; color: var(--accent-info); }
+
         .step-badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
         .step-badge.pass { background: var(--accent-pass); color: #000; }
         .step-badge.fail { background: var(--accent-fail); color: #fff; }
@@ -47,9 +63,27 @@
         .step-header { display: flex; justify-content: space-between; align-items: center; }
         .step-header h3 { margin: 0; font-size: 18px; color: #38bdf8; }
         code { background: #090d16; padding: 2px 6px; border-radius: 4px; color: #f472b6; }
+        
+        .telemetry-bar { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .telemetry-pill { background: #090d16; border: 1px solid #334155; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--text-muted); }
+        .telemetry-pill b { color: var(--text-color); }
+
         .img-container { margin-top: 12px; text-align: center; }
         .step-img { max-width: 100%; max-height: 350px; border-radius: 8px; border: 1px solid #475569; transition: transform 0.2s; }
         .step-img:hover { transform: scale(1.02); }
+
+        .step-card.fail { border-left: 4px solid var(--accent-fail); }
+
+        .root-cause-card { background: #1a0f1a; border: 1px solid #701a75; border-radius: 8px; padding: 14px; margin-top: 14px; color: #f5d0fe; }
+        .root-cause-card h4 { margin: 0 0 8px 0; color: #f472b6; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+        .attempt-box { background: #0f172a; border-radius: 6px; padding: 10px; margin-top: 8px; font-size: 13px; border: 1px solid #334155; }
+        .raw-response-box { margin-top: 6px; background: #020617; border-radius: 4px; padding: 8px; font-family: monospace; font-size: 11px; overflow-x: auto; color: #a7f3d0; }
+        .raw-response-box pre { margin: 0; white-space: pre-wrap; }
+        .crop-thumb { max-height: 140px; border-radius: 6px; border: 1px solid #e11d48; margin-top: 6px; }
+
+        .nav-bar { margin-bottom: 16px; }
+        .back-link { color: #38bdf8; text-decoration: none; font-size: 14px; font-weight: 600; transition: color 0.2s; }
+        .back-link:hover { color: #7dd3fc; text-decoration: underline; }
 
         .assertion-card { background: #111827; border-left: 4px solid var(--accent-pass); border-radius: 8px; padding: 16px; margin-top: 24px; }
         .assertion-card.fail { border-left-color: var(--accent-fail); }
@@ -57,95 +91,176 @@
 </head>
 <body>
     <div class="container">
+        <div class="nav-bar">
+            <a href="master_report.html" class="back-link">← Torna alla Master Dashboard</a>
+        </div>
         <div class="header-card">
             <div>
                 <h1>📱 MobileRun Test Suite</h1>
-                <div class="meta">Scenario: <strong>Login Flow Scenario - Production Suite</strong> | Durata: <strong>205.53s</strong></div>
+                <div class="meta">Scenario: <strong>Login Flow Scenario - Production Suite</strong></div>
             </div>
             <div><span class="badge fail">FAILED</span></div>
         </div>
 
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="meta">Durata Totale</div>
+                <div class="kpi-val">183.98s</div>
+            </div>
+            <div class="kpi-card">
+                <div class="meta">Latenza Media VLM</div>
+                <div class="kpi-val">16426ms</div>
+            </div>
+            <div class="kpi-card">
+                <div class="meta">Latenza Media ADB</div>
+                <div class="kpi-val">6059ms</div>
+            </div>
+        </div>
+
         <h2>📋 Dettaglio Esecuzione Step</h2>
         
-            <div class="step-card">
+            <div class="step-card ">
                 <div class="step-header">
                     <h3>Step 1: action_until</h3>
-                    <div><span class="step-badge pass">PASS</span> <span class="time">69.28s</span></div>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">42.4s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>Icona dell'ingranaggio (Impostazioni) in alto a destra dello schermo</code></p>
-                <p><strong>Note:</strong> Condition met at attempt 2.</p>
+                <p><strong>Note:</strong> Condition met at attempt 1.</p>
+                
+            <div class="telemetry-bar">
+                <span class="telemetry-pill">📷 ADB Cap: <b>2596ms</b></span>
+                <span class="telemetry-pill">🧠 VLM Pass 1: <b>11568ms</b></span>
+                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>692ms</b></span>
+                <span class="telemetry-pill">⚡ ADB Input: <b>2444ms</b></span>
+            </div>
+            
+                
                 <div class="img-container">
-                    <a href="screenshots/step_1_until_attempt_1_tapped.png" target="_blank"><img src="screenshots/step_1_until_attempt_1_tapped.png" class="step-img" alt="Step Screenshot"></a>
+                    <a href="screenshots/step_1_action_until_tapped.png" target="_blank"><img src="screenshots/step_1_action_until_tapped.png" class="step-img" alt="Step Screenshot"></a>
                 </div>
             </div>
             
-            <div class="step-card">
+            <div class="step-card ">
                 <div class="step-header">
                     <h3>Step 2: type_text</h3>
-                    <div><span class="step-badge pass">PASS</span> <span class="time">23.7s</span></div>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">23.86s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>Campo di testo per l'URL API (o 'url API') nel dialogo delle impostazioni</code></p>
-                <p><strong>Note:</strong> Typed 'betacc.planetps.it' at (41.5%, 42.8%)</p>
+                <p><strong>Note:</strong> Typed 'betacc.planetps.it' at (45.2%, 42.9%)</p>
+                
+            <div class="telemetry-bar">
+                <span class="telemetry-pill">📷 ADB Cap: <b>1230ms</b></span>
+                <span class="telemetry-pill">🧠 VLM Pass 1: <b>12076ms</b></span>
+                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>847ms</b></span>
+                <span class="telemetry-pill">⚡ ADB Input: <b>9667ms</b></span>
+            </div>
+            
+                
                 <div class="img-container">
                     <a href="screenshots/step_2_type_text_tapped.png" target="_blank"><img src="screenshots/step_2_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
                 </div>
             </div>
             
-            <div class="step-card">
+            <div class="step-card ">
                 <div class="step-header">
                     <h3>Step 3: type_text</h3>
-                    <div><span class="step-badge pass">PASS</span> <span class="time">22.45s</span></div>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">22.42s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>Campo di testo per lo Shop Code (o 'shop code') nel dialogo delle impostazioni</code></p>
-                <p><strong>Note:</strong> Typed 'dev2' at (42.9%, 51.4%)</p>
+                <p><strong>Note:</strong> Typed 'dev2' at (42.9%, 51.5%)</p>
+                
+            <div class="telemetry-bar">
+                <span class="telemetry-pill">📷 ADB Cap: <b>1208ms</b></span>
+                <span class="telemetry-pill">🧠 VLM Pass 1: <b>11745ms</b></span>
+                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>834ms</b></span>
+                <span class="telemetry-pill">⚡ ADB Input: <b>8586ms</b></span>
+            </div>
+            
+                
                 <div class="img-container">
                     <a href="screenshots/step_3_type_text_tapped.png" target="_blank"><img src="screenshots/step_3_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
                 </div>
             </div>
             
-            <div class="step-card">
+            <div class="step-card ">
                 <div class="step-header">
                     <h3>Step 4: action</h3>
-                    <div><span class="step-badge pass">PASS</span> <span class="time">15.57s</span></div>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">15.83s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>Pulsante 'Save' per salvare le impostazioni nel dialogo</code></p>
-                <p><strong>Note:</strong> Tap at (60.0%, 63.1%)</p>
+                <p><strong>Note:</strong> Tap at (60.0%, 63.3%)</p>
+                
+            <div class="telemetry-bar">
+                <span class="telemetry-pill">📷 ADB Cap: <b>1194ms</b></span>
+                <span class="telemetry-pill">🧠 VLM Pass 1: <b>11908ms</b></span>
+                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>854ms</b></span>
+                <span class="telemetry-pill">⚡ ADB Input: <b>1833ms</b></span>
+            </div>
+            
+                
                 <div class="img-container">
                     <a href="screenshots/step_4_action_tapped.png" target="_blank"><img src="screenshots/step_4_action_tapped.png" class="step-img" alt="Step Screenshot"></a>
                 </div>
             </div>
             
-            <div class="step-card">
+            <div class="step-card ">
                 <div class="step-header">
                     <h3>Step 5: type_text</h3>
-                    <div><span class="step-badge pass">PASS</span> <span class="time">23.34s</span></div>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">24.38s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>Area di testo per lo Username o Email</code></p>
-                <p><strong>Note:</strong> Typed 'andrea@plansol.it' at (43.1%, 43.8%)</p>
+                <p><strong>Note:</strong> Typed 'andrea@plansol.it' at (43.3%, 43.4%)</p>
+                
+            <div class="telemetry-bar">
+                <span class="telemetry-pill">📷 ADB Cap: <b>1195ms</b></span>
+                <span class="telemetry-pill">🧠 VLM Pass 1: <b>12731ms</b></span>
+                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>882ms</b></span>
+                <span class="telemetry-pill">⚡ ADB Input: <b>9525ms</b></span>
+            </div>
+            
+                
                 <div class="img-container">
                     <a href="screenshots/step_5_type_text_tapped.png" target="_blank"><img src="screenshots/step_5_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
                 </div>
             </div>
             
-            <div class="step-card">
+            <div class="step-card ">
                 <div class="step-header">
                     <h3>Step 6: type_text</h3>
-                    <div><span class="step-badge pass">PASS</span> <span class="time">22.31s</span></div>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">22.3s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>Area di testo per la Password</code></p>
-                <p><strong>Note:</strong> Typed 'samsung4' at (41.5%, 52.2%)</p>
+                <p><strong>Note:</strong> Typed 'samsung4' at (42.0%, 52.2%)</p>
+                
+            <div class="telemetry-bar">
+                <span class="telemetry-pill">📷 ADB Cap: <b>1230ms</b></span>
+                <span class="telemetry-pill">🧠 VLM Pass 1: <b>11669ms</b></span>
+                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>824ms</b></span>
+                <span class="telemetry-pill">⚡ ADB Input: <b>8537ms</b></span>
+            </div>
+            
+                
                 <div class="img-container">
                     <a href="screenshots/step_6_type_text_tapped.png" target="_blank"><img src="screenshots/step_6_type_text_tapped.png" class="step-img" alt="Step Screenshot"></a>
                 </div>
             </div>
             
-            <div class="step-card">
+            <div class="step-card ">
                 <div class="step-header">
                     <h3>Step 7: action</h3>
-                    <div><span class="step-badge pass">PASS</span> <span class="time">15.89s</span></div>
+                    <div><span class="step-badge pass">PASS</span> <span class="time">17.16s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>Pulsante azzurro con scritto 'Login'</code></p>
                 <p><strong>Note:</strong> Tap at (50.0%, 62.3%)</p>
+                
+            <div class="telemetry-bar">
+                <span class="telemetry-pill">📷 ADB Cap: <b>1231ms</b></span>
+                <span class="telemetry-pill">🧠 VLM Pass 1: <b>12998ms</b></span>
+                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>1055ms</b></span>
+                <span class="telemetry-pill">⚡ ADB Input: <b>1825ms</b></span>
+            </div>
+            
+                
                 <div class="img-container">
                     <a href="screenshots/step_7_action_tapped.png" target="_blank"><img src="screenshots/step_7_action_tapped.png" class="step-img" alt="Step Screenshot"></a>
                 </div>
@@ -154,7 +269,7 @@
 
         <div class="assertion-card fail">
             <h3>🔍 Asserzione Visiva Finale: <span class="step-badge fail">FAIL</span></h3>
-            <p><strong>Esito:</strong> Risposta LLM non formattata correttamente: (499,434)</p>
+            <p><strong>Esito:</strong> Risposta LLM non formattata correttamente:  false</p>
         </div>
     </div>
 </body>

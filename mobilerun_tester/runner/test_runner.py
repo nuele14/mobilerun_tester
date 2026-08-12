@@ -54,17 +54,23 @@ class TestRunner:
 
                 logger.info(f"Executing step {i}/{total_steps}: {stype} | target='{target}' | value='{val}'")
 
+                screencap_start = time.time()
                 with StatusSpinner(f"📸 Cattura screenshot per Step {i}/{total_steps}..."):
                     adb.HideSoftKeyboard()
                     shot_path = str(self.screenshots_dir / f"step_{i}_{stype}.png")
                     adb.CaptureScreenBuffer(shot_path)
+                screencap_ms = int((time.time() - screencap_start) * 1000)
 
                 step_passed, step_notes = True, ""
+                vlm_p1_ms, vlm_p2_ms, vlm_tot_ms, adb_ms = 0, 0, 0, 0
+                attempt_traces = []
 
                 if stype in ("action_until", "long_press_until"):
                     cond = step.get("until_condition", "")
                     with StatusSpinner(f"🔍 Verifica condizione visiva '{cond}'..."):
-                        is_fulfilled = vision.VerifyScreenAssertion(shot_path, cond).get("pass")
+                        res_ast = vision.VerifyScreenAssertion(shot_path, cond)
+                        is_fulfilled = res_ast.get("pass")
+                        vlm_tot_ms += res_ast.get("vlm_ms", 0)
 
                     if is_fulfilled:
                         step_notes = f"Condition '{cond}' verified prior to tap."
@@ -72,61 +78,133 @@ class TestRunner:
                         succ = False
                         for att in range(1, step.get("max_retries", 3) + 1):
                             with StatusSpinner(f"🧠 Grounding VLM per '{target}' (Tentativo {att})..."):
-                                x, y = vision.PredictCoordinatesFast(shot_path, target, force_zoom=use_zoom)
-                                DrawTapTargetHighlight(shot_path, x, y, shot_path.replace(".png", "_tapped.png"))
+                                x, y, v_metrics = vision.PredictCoordinatesFast(shot_path, target, force_zoom=use_zoom)
+                                vlm_p1_ms += v_metrics.get("pass1_ms", 0)
+                                vlm_p2_ms += v_metrics.get("pass2_ms", 0)
+                                vlm_tot_ms += v_metrics.get("vlm_total_ms", 0)
+                                DrawTapTargetHighlight(shot_path, x, y, shot_path.replace(".png", "_tapped.png"), target_desc=target)
 
+                            t_adb_start = time.time()
                             with StatusSpinner(f"⚡ Esecuzione azione ADB ({stype}) su ({x:.1f}%, {y:.1f}%)..."):
                                 if stype == "long_press_until":
                                     adb.ExecuteLongPress(x, y, duration_ms=step.get("duration_ms", 2000))
                                 else:
                                     adb.DispatchRobustTap(x, y, mode=tap_mode)
                                 time.sleep(0.8)
+                            adb_ms += int((time.time() - t_adb_start) * 1000)
 
                             after_shot = str(self.screenshots_dir / f"step_{i}_until_attempt_{att}.png")
                             adb.CaptureScreenBuffer(after_shot)
                             with StatusSpinner(f"🔍 Verifica esito tentata azione..."):
-                                if vision.VerifyScreenAssertion(after_shot, cond).get("pass"):
+                                ast_check = vision.VerifyScreenAssertion(after_shot, cond)
+                                vlm_tot_ms += ast_check.get("vlm_ms", 0)
+
+                                attempt_traces.append({
+                                    "attempt": att,
+                                    "coarse_x": v_metrics.get("coarse_x"),
+                                    "coarse_y": v_metrics.get("coarse_y"),
+                                    "final_x": x,
+                                    "final_y": y,
+                                    "raw_response": v_metrics.get("raw_response"),
+                                    "zoom_crop_screenshot": v_metrics.get("cropped_tapped_path"),
+                                    "assertion_reason": ast_check.get("reason"),
+                                    "assertion_passed": ast_check.get("pass")
+                                })
+
+                                if ast_check.get("pass"):
                                     succ, step_notes = True, f"Condition met at attempt {att}."
                                     break
                             shot_path = after_shot
 
                         if not succ:
                             step_passed = overall_passed = False
-                            step_notes = f"Condition '{cond}' unfulfilled after retries."
+                            step_notes = f"Condition '{cond}' unfulfilled after {step.get('max_retries', 3)} retries."
 
                 elif stype == "action":
                     with StatusSpinner(f"🧠 Grounding VLM & Calcolo coordinate per '{target}'..."):
-                        x, y = vision.PredictCoordinatesFast(shot_path, target, force_zoom=use_zoom)
-                        DrawTapTargetHighlight(shot_path, x, y, shot_path.replace(".png", "_tapped.png"))
+                        x, y, v_metrics = vision.PredictCoordinatesFast(shot_path, target, force_zoom=use_zoom)
+                        vlm_p1_ms = v_metrics.get("pass1_ms", 0)
+                        vlm_p2_ms = v_metrics.get("pass2_ms", 0)
+                        vlm_tot_ms = v_metrics.get("vlm_total_ms", 0)
+                        DrawTapTargetHighlight(shot_path, x, y, shot_path.replace(".png", "_tapped.png"), target_desc=target)
 
+                        attempt_traces.append({
+                            "attempt": 1,
+                            "coarse_x": v_metrics.get("coarse_x"),
+                            "coarse_y": v_metrics.get("coarse_y"),
+                            "final_x": x,
+                            "final_y": y,
+                            "raw_response": v_metrics.get("raw_response"),
+                            "zoom_crop_screenshot": v_metrics.get("cropped_tapped_path")
+                        })
+
+                    t_adb_start = time.time()
                     with StatusSpinner(f"⚡ Esecuzione tap ADB su ({x:.1f}%, {y:.1f}%)..."):
                         adb.DispatchRobustTap(x, y, mode=tap_mode)
-                        time.sleep(1.0)
-                        step_notes = f"Tap at ({x:.1f}%, {y:.1f}%)"
+                        time.sleep(0.8)
+                    adb_ms = int((time.time() - t_adb_start) * 1000)
+                    step_notes = f"Tap at ({x:.1f}%, {y:.1f}%)"
 
                 elif stype == "type_text":
                     with StatusSpinner(f"🧠 Grounding VLM per campo '{target}'..."):
-                        x, y = vision.PredictCoordinatesFast(shot_path, target, force_zoom=use_zoom)
-                        DrawTapTargetHighlight(shot_path, x, y, shot_path.replace(".png", "_tapped.png"))
+                        x, y, v_metrics = vision.PredictCoordinatesFast(shot_path, target, force_zoom=use_zoom)
+                        vlm_p1_ms = v_metrics.get("pass1_ms", 0)
+                        vlm_p2_ms = v_metrics.get("pass2_ms", 0)
+                        vlm_tot_ms = v_metrics.get("vlm_total_ms", 0)
+                        DrawTapTargetHighlight(shot_path, x, y, shot_path.replace(".png", "_tapped.png"), target_desc=target)
 
+                        attempt_traces.append({
+                            "attempt": 1,
+                            "coarse_x": v_metrics.get("coarse_x"),
+                            "coarse_y": v_metrics.get("coarse_y"),
+                            "final_x": x,
+                            "final_y": y,
+                            "raw_response": v_metrics.get("raw_response"),
+                            "zoom_crop_screenshot": v_metrics.get("cropped_tapped_path")
+                        })
+
+                    t_adb_start = time.time()
                     with StatusSpinner(f"⌨️ Inserimento testo ADB: '{val}'..."):
                         adb.DispatchRobustTap(x, y, mode="tap")
                         time.sleep(0.2)
                         adb.InjectText(val)
                         time.sleep(0.3)
                         adb.HideSoftKeyboard()
-                        step_notes = f"Typed '{val}' at ({x:.1f}%, {y:.1f}%)"
+                    adb_ms = int((time.time() - t_adb_start) * 1000)
+                    step_notes = f"Typed '{val}' at ({x:.1f}%, {y:.1f}%)"
 
                 dur = round(time.time() - t_start, 2)
+                step_ms = int(dur * 1000)
+
+                logger.info(f"📊 [Step Telemetry {i}] Screencap={screencap_ms}ms | VLM Pass1={vlm_p1_ms}ms | VLM Pass2={vlm_p2_ms}ms | VLM Total={vlm_tot_ms}ms | ADB Input={adb_ms}ms | Total={step_ms}ms")
+
+                if not step_passed:
+                    logger.warning(f"❌ [ROOT CAUSE DEBUG TRACE] Step {i} ({stype}) failed for '{target}'. Note: {step_notes}")
+                    for att_t in attempt_traces:
+                        logger.warning(f"   • Attempt {att_t.get('attempt')}: Target=({att_t.get('final_x'):.1f}%, {att_t.get('final_y'):.1f}%) | AssertionReason='{att_t.get('assertion_reason')}' | RawVLM='{att_t.get('raw_response')}'")
+
                 if step_passed:
-                    console.print(f" [bold green]✔[/bold green] [bold]Step {i}/{total_steps}[/bold] {stype} | '{target}' ({dur}s)")
+                    console.print(f" [bold green]✔[/bold green] [bold]Step {i}/{total_steps}[/bold] {stype} | '{target}' ({dur}s) [dim](VLM: {vlm_tot_ms}ms, ADB: {adb_ms}ms)[/dim]")
                 else:
                     console.print(f" [bold red]✖[/bold red] [bold]Step {i}/{total_steps}[/bold] {stype} | '{target}' - [bold red]FALLITO[/bold red] ({dur}s)")
 
                 step_results.append({
                     "step_index": i, "type": stype, "target": target, "passed": step_passed,
                     "duration_seconds": dur, "screenshot": shot_path,
-                    "tapped_screenshot": shot_path.replace(".png", "_tapped.png"), "notes": step_notes
+                    "tapped_screenshot": shot_path.replace(".png", "_tapped.png"), "notes": step_notes,
+                    "telemetry": {
+                        "screencap_ms": screencap_ms,
+                        "vlm_pass1_ms": vlm_p1_ms,
+                        "vlm_pass2_ms": vlm_p2_ms,
+                        "vlm_total_ms": vlm_tot_ms,
+                        "adb_input_ms": adb_ms,
+                        "total_step_ms": step_ms
+                    },
+                    "root_cause_trace": {
+                        "target": target,
+                        "step_notes": step_notes,
+                        "attempts": attempt_traces
+                    } if (not step_passed or attempt_traces) else None
                 })
 
             assertion = scenario.get("assertion", {})
@@ -143,16 +221,31 @@ class TestRunner:
                         overall_passed = False
 
             tot_dur = round(time.time() - start_t, 2)
+
+            # Scenario Summary Telemetry KPIs
+            total_vlm_ms = sum(s.get("telemetry", {}).get("vlm_total_ms", 0) for s in step_results)
+            total_adb_ms = sum(s.get("telemetry", {}).get("adb_input_ms", 0) for s in step_results)
+            total_screencap_ms = sum(s.get("telemetry", {}).get("screencap_ms", 0) for s in step_results)
+            avg_vlm_ms = int(total_vlm_ms / max(1, len(step_results)))
+            avg_adb_ms = int(total_adb_ms / max(1, len(step_results)))
+
             log_file = GetLogFilePath()
             status_str = "[bold green]✅ SUITE PASSED[/bold green]" if overall_passed else "[bold red]❌ SUITE FAILED[/bold red]"
-            console.print(f"\n{status_str} | Tempo totale: [bold]{tot_dur}s[/bold] | Log: [dim]{log_file}[/dim]\n")
+            console.print(f"\n{status_str} | Tempo totale: [bold]{tot_dur}s[/bold] (VLM Med: {avg_vlm_ms}ms, ADB Med: {avg_adb_ms}ms) | Log: [dim]{log_file}[/dim]\n")
 
-            logger.info(f"Scenario finished: passed={overall_passed}, duration={tot_dur}s")
+            logger.info(f"Scenario finished: passed={overall_passed}, total_dur={tot_dur}s, total_vlm={total_vlm_ms}ms, total_adb={total_adb_ms}ms")
 
             return {
                 "scenario_name": scenario_name, "passed": overall_passed,
                 "total_duration_seconds": tot_dur, "steps": step_results,
-                "final_assertion": {"passed": ast_passed, "reason": ast_reason}
+                "final_assertion": {"passed": ast_passed, "reason": ast_reason},
+                "telemetry_summary": {
+                    "total_vlm_ms": total_vlm_ms,
+                    "total_adb_ms": total_adb_ms,
+                    "total_screencap_ms": total_screencap_ms,
+                    "avg_vlm_ms": avg_vlm_ms,
+                    "avg_adb_ms": avg_adb_ms
+                }
             }
 
         finally:

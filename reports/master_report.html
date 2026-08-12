@@ -60,16 +60,37 @@
         .scenario-row {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
+            padding: 18px;
+            margin-bottom: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid #334155;
+            transition: border-color 0.2s;
         }
+        .scenario-row:hover { border-color: #38bdf8; }
         .scenario-row.fail { border-left: 4px solid var(--accent-fail); }
         .scenario-row h3 { margin: 0 0 4px 0; font-size: 18px; color: #38bdf8; }
         .meta { color: var(--text-muted); font-size: 13px; }
+
+        .scenario-actions { display: flex; align-items: center; gap: 14px; }
+        .report-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #0284c7;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+        }
+        .report-btn:hover { background: #0369a1; transform: translateY(-1px); }
+        .report-btn.fail { background: #dc2626; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); }
+        .report-btn.fail:hover { background: #b91c1c; }
     </style>
 </head>
 <body>
@@ -93,7 +114,7 @@
             </div>
             <div class="kpi-card">
                 <div class="meta">Tempo Totale</div>
-                <div class="kpi-val">205.53s</div>
+                <div class="kpi-val">183.98s</div>
             </div>
         </div>
 
@@ -102,9 +123,12 @@
             <div class="scenario-row fail">
                 <div>
                     <h3>Login Flow Scenario - Production Suite</h3>
-                    <div class="meta">Steps: 7 | Durata: 205.53s</div>
+                    <div class="meta">Steps: 7 | Durata: 183.98s</div>
                 </div>
-                <div><span class="step-badge fail">FAILED</span></div>
+                <div class="scenario-actions">
+                    <span class="step-badge fail">FAILED</span>
+                    <a href="login_flow_report.html" class="report-btn fail">📄 Apri Report Dettagliato →</a>
+                </div>
             </div>
             
     </div>
