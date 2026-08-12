@@ -4,8 +4,9 @@
   "version_name": "Walther PPK Initial Release",
   "release_date": "2026-08-12",
   "codename": "Walther PPK",
-  "description": "Vision-Driven Automated Mobile Testing Framework for Android & Flutter inspired by Ian Fleming's Q",
+  "description": "Vision-Driven Automated Mobile Testing Framework for Android & Flutter",
   "author": "Emanuele Coltro",
+  "copyright": "Copyright (c) 2026 Emanuele Coltro. Original codebase Copyright (c) 2025 Niels Schmidt / DroidRun",
   "license": "MIT",
   "features": [
     "2-Pass Vision Grounding (Coarse + Fine Bounding Box Zoom Crop)",

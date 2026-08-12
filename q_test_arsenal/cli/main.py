@@ -28,7 +28,15 @@ CLI Dispatch Diagram:
 import argparse
 import sys
 from pathlib import Path
-from q_test_arsenal import __version__, __version_name__, __release_date__, Q_ASCII_ART
+from q_test_arsenal import (
+    __version__,
+    __version_name__,
+    __release_date__,
+    __author__,
+    __copyright__,
+    __license__,
+    Q_ASCII_ART,
+)
 from q_test_arsenal.core.scenario_parser import ScenarioParser
 from q_test_arsenal.runner.test_runner import TestRunner
 from q_test_arsenal.runner.report_generator import ReportGenerator
@@ -53,7 +61,7 @@ def ExecuteCommandLineInterface():
         "--version",
         "-v",
         action="store_true",
-        help="Stampa la versione del framework e la grafica ASCII art di Q"
+        help="Stampa la versione del framework ed i dettagli del sistema"
     )
     parser.add_argument(
         "--config",
@@ -85,8 +93,14 @@ def ExecuteCommandLineInterface():
 
     if args.version:
         console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
-        console.print(f"🚀 [bold white]Q - Test Arsenal[/bold white] [bold yellow]v{__version__}[/bold yellow] [dim]('{__version_name__}' - Rilasciato il {__release_date__})[/dim]")
-        console.print("🕵️‍♂️ [dim]The Quartermaster's Mobile Vision Testing Framework (Inspired by Ian Fleming's Q)[/dim]\n")
+        console.print("[bold white]Q - TEST ARSENAL SYSTEM INFORMATION[/bold white]")
+        console.print("[dim]------------------------------------------------------------[/dim]")
+        console.print(f"  • Framework Version : [bold yellow]{__version__}[/bold yellow] ({__version_name__})")
+        console.print(f"  • Release Date      : {__release_date__}")
+        console.print(f"  • Author            : {__author__}")
+        console.print(f"  • License           : {__license__}")
+        console.print(f"  • Copyright         : [dim]{__copyright__}[/dim]")
+        console.print("[dim]------------------------------------------------------------[/dim]\n")
         sys.exit(0)
 
     logger = GetLogger()

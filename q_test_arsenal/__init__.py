@@ -14,6 +14,7 @@ __version__ = _VERSION_DATA.get("version", "1.0.0")
 __version_name__ = _VERSION_DATA.get("version_name", "GoldenEye Initial Release")
 __release_date__ = _VERSION_DATA.get("release_date", "2026-08-12")
 __author__ = _VERSION_DATA.get("author", "Emanuele Coltro")
+__copyright__ = _VERSION_DATA.get("copyright", "Copyright (c) 2026 Emanuele Coltro")
 __license__ = _VERSION_DATA.get("license", "MIT")
 
 def GetVersionInfo() -> dict:
