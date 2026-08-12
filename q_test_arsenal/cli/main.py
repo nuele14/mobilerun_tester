@@ -28,6 +28,7 @@ CLI Dispatch Diagram:
 import argparse
 import sys
 from pathlib import Path
+from q_test_arsenal import __version__, Q_ASCII_ART
 from q_test_arsenal.core.scenario_parser import ScenarioParser
 from q_test_arsenal.runner.test_runner import TestRunner
 from q_test_arsenal.runner.report_generator import ReportGenerator
@@ -39,9 +40,6 @@ def ExecuteCommandLineInterface():
     [Function] Main CLI entrypoint parsing arguments and dispatching single or batch test suite runs.
     [Why] Zero-argument invocation defaults to running all test scenarios in 'scenarios/' directory.
     """
-    logger = GetLogger()
-    logger.info("Initializing Q - Test Arsenal CLI")
-
     parser = argparse.ArgumentParser(
         description="Q - Test Arsenal - Vision-Driven Automated Mobile Testing Framework"
     )
@@ -50,6 +48,12 @@ def ExecuteCommandLineInterface():
         nargs="?",
         default=None,
         help="Percorso al file YAML dello scenario da eseguire. Se omesso, esegue tutti i test in 'scenarios/'"
+    )
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="store_true",
+        help="Stampa la versione del framework e la grafica ASCII art di Q"
     )
     parser.add_argument(
         "--config",
@@ -78,6 +82,15 @@ def ExecuteCommandLineInterface():
     )
 
     args = parser.parse_args()
+
+    if args.version:
+        console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
+        console.print(f"🚀 [bold white]Q - Test Arsenal[/bold white] [dim]v{__version__}[/dim]")
+        console.print("🕵️‍♂️ [dim]The Quartermaster's Mobile Vision Testing Framework (Inspired by Ian Fleming's Q)[/dim]\n")
+        sys.exit(0)
+
+    logger = GetLogger()
+    logger.info("Initializing Q - Test Arsenal CLI")
 
     config_path = Path(args.config)
     config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
