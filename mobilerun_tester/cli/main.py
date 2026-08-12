@@ -132,17 +132,64 @@ def ExecuteCommandLineInterface():
             console.print(f"[bold red]❌ File scenario {scenario_path} non trovato![/bold red]")
             sys.exit(1)
 
-        try:
-            summary = runner.ExecuteTestScenario(str(scenario_path), save_macro=args.save_macro, use_macro=args.use_macro)
-            ReportGenerator.GenerateSingleScenarioHtmlReport(summary, args.html_report)
+        # Mode 2A: Meta-Suite Manifest Execution
+        if ScenarioParser.IsSuiteScenario(str(scenario_path)):
+            suite_manifest = ScenarioParser.LoadSuiteManifest(str(scenario_path))
+            suite_name = suite_manifest.get("name", scenario_path.stem)
+            sub_scenarios = suite_manifest.get("scenarios", [])
 
-            if not summary.get("passed", False):
+            console.print(f"\n[bold yellow]🏆 Esecuzione Suite Manifest:[/bold yellow] [bold white]{suite_name}[/bold white] [dim]({len(sub_scenarios)} scenari ordinati)[/dim]")
+            
+            suite_summaries = []
+            all_passed = True
+
+            for item in sub_scenarios:
+                sub_file = item.get("file")
+                use_m = args.use_macro or item.get("use_macro", False)
+                save_m = args.save_macro or item.get("save_macro", False)
+
+                sub_p = Path(sub_file)
+                if not sub_p.exists():
+                    sub_p = scenario_path.parent / sub_file
+
+                if not sub_p.exists():
+                    console.print(f"[bold red]❌ Errore: Sotto-scenario '{sub_file}' non trovato![/bold red]")
+                    all_passed = False
+                    continue
+
+                try:
+                    summary = runner.ExecuteTestScenario(str(sub_p), save_macro=save_m, use_macro=use_m)
+                    suite_summaries.append(summary)
+
+                    report_name = f"reports/{sub_p.stem}_report.html"
+                    summary["report_file"] = f"{sub_p.stem}_report.html"
+                    ReportGenerator.GenerateSingleScenarioHtmlReport(summary, report_name)
+
+                    if not summary.get("passed", False):
+                        all_passed = False
+                except Exception as e:
+                    logger.error(f"Error executing sub-scenario {sub_p}: {e}", exc_info=True)
+                    console.print(f"[bold red]❌ Errore durante l'esecuzione di {sub_p}: {e}[/bold red]")
+                    all_passed = False
+
+            ReportGenerator.GenerateMasterSuiteHtmlReport(suite_summaries, "reports/master_report.html")
+
+            if not all_passed:
                 sys.exit(1)
 
-        except Exception as e:
-            logger.error(f"Failure during scenario execution: {e}", exc_info=True)
-            console.print(f"[bold red]❌ Errore durante l'esecuzione: {e}[/bold red]")
-            sys.exit(1)
+        # Mode 2B: Single Scenario Execution
+        else:
+            try:
+                summary = runner.ExecuteTestScenario(str(scenario_path), save_macro=args.save_macro, use_macro=args.use_macro)
+                ReportGenerator.GenerateSingleScenarioHtmlReport(summary, args.html_report)
+
+                if not summary.get("passed", False):
+                    sys.exit(1)
+
+            except Exception as e:
+                logger.error(f"Failure during scenario execution: {e}", exc_info=True)
+                console.print(f"[bold red]❌ Errore durante l'esecuzione: {e}[/bold red]")
+                sys.exit(1)
 
 
 def main():

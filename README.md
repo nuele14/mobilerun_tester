@@ -204,6 +204,30 @@ assertion:
 * `action_until`: Ripete il tap fino a quando la condizione `until_condition` non risulta vera.
 * `long_press_until`: Esegue la pressione prolungata (Long Press) fino al soddisfacimento di `until_condition`.
 * `wait`: Pausa di attesa in secondi (`seconds: N`) per consentire il completamento di transizioni UI o animazioni.
+* `include_scenario`: Include ed esegue i passi di un altro scenario YAML (`scenario: "scenarios/login_flow.yaml"`).
+
+---
+
+## 🏆 Suite Manifest (Scenari che contengono altri Scenari)
+
+Puoi creare un file YAML di Suite (es: `scenarios/master_suite.yaml`) per ordinare ed eseguire in sequenza precisa varie suite di test dell'applicazione, specificando per ciascuna anche le preferenze delle macro:
+
+```yaml
+name: "E2E Complete Test Suite"
+description: "Suite principale che ordina ed esegue in sequenza la configurazione, il login ed il checkout"
+
+scenarios:
+  - file: "scenarios/login_flow.yaml"
+    use_macro: true
+
+  - file: "scenarios/checkout_flow.yaml"
+    use_macro: false
+```
+
+Per eseguire l'intera suite ordinata dal manifest:
+```bash
+python -m mobilerun_tester.cli.main scenarios/master_suite.yaml
+```
 
 ---
 
