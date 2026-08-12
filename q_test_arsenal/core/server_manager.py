@@ -12,7 +12,7 @@ import subprocess
 import time
 import urllib.request
 from typing import Optional, Dict, Any
-from mobilerun_tester.core.logger import GetLogger
+from q_test_arsenal.core.logger import GetLogger
 
 
 class LlamaServerManager:

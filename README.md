@@ -1,8 +1,18 @@
-# 🚀 MobileRun Tester
+# 🚀 Q - Test Arsenal
 
-**MobileRun Tester** è un framework di testing automatizzato E2E visivo per applicazioni mobile (**Flutter & Native Android**), basato su modelli Vision-Language (**VLM**) eseguiti in locale.
+**Q - Test Arsenal** è un framework autonomo di testing automatizzato E2E visivo per applicazioni mobile (**Flutter & Native Android**), basato su modelli Vision-Language (**VLM**) eseguiti completamente in locale.
 
-Il sistema esegue un grounding visivo a due livelli (**Coarse + Fine Bounding Box Zoom**) ed interagisce direttamente con il dispositivo Android via ADB, senza dipendere da servizi cloud esterni o ID di elemento hardcodati nel codice.
+Il sistema esegue un grounding visivo a due livelli (**Coarse + Fine Bounding Box Zoom Crop**) ed interagisce direttamente con il dispositivo Android via ADB, senza dipendere da servizi cloud esterni o ID di elemento hardcodati nel codice.
+
+---
+
+### 🕵️‍♂️ Perché "Q"? — Un tributo a Ian Fleming
+
+Nei romanzi e nei film ideati da **Ian Fleming**, **Q** è l'iconico *Quartermaster* del laboratorio segreto: la mente geniale che non scende sul campo di battaglia al posto dell'agente 007, ma lavora nell'ombra per forgiargli i gadget ed i dispositivi straordinari capaci di salvarlo nelle missioni più impossibili.
+
+**Q - Test Arsenal** nasce con lo stesso spirito artigianale e romantico: non sostituisce il lavoro dello sviluppatore, ma presidia silenziosamente ogni angolo dell'interfaccia mobile prima del lancio, testa visivamente ogni scenario e ti consegna l'arsenale perfetto prima che il tuo codice affronti la produzione.
+
+**Veloce, essenziale, letale contro i bug.**
 
 ---
 
@@ -13,15 +23,17 @@ Il sistema esegue un grounding visivo a due livelli (**Coarse + Fine Bounding Bo
 4. [Validazione Automatica dell'Ambiente](#-validazione-automatica-dellambiente)
 5. [Dove Impostare la Configurazione](#-dove-impostare-la-configurazione)
 6. [Dove Inserire e Creare gli Scenari di Test](#-dove-inserire-e-creare-gli-scenari-di-test)
-7. [Esecuzione dei Test (CLI)](#-esecuzione-dei-test-cli)
-8. [Report ed Ispezione Log](#-report-ed-ispezione-log)
-9. [Riconoscimenti e Crediti](#-riconoscimenti-e-crediti)
+7. [Suite Manifest & Gestione Errori](#-suite-manifest--gestione-errori-continue_on_failure)
+8. [Esecuzione dei Test (CLI `q-test`)](#-esecuzione-dei-test-cli-q-test)
+9. [Telemetria, Root Cause Debugging e Report HTML](#-telemetria-root-cause-debugging-e-report-html)
+10. [Riconoscimenti e Crediti](#-riconoscimenti-e-crediti)
+11. [Licenza](#-licenza)
 
 ---
 
 ## 🛠️ Componenti di Sistema Richiesti
 
-Prima di avviare **MobileRun Tester**, assicurati che siano installati i seguenti componenti di sistema sul tuo computer:
+Prima di avviare **Q - Test Arsenal**, assicurati che siano installati i seguenti componenti di sistema sul tuo computer:
 
 ### 1. Android Debug Bridge (ADB)
 Richiesto per comunicare con dispositivi fisici o emulatori Android.
@@ -42,7 +54,7 @@ Richiesto per comunicare con dispositivi fisici o emulatori Android.
   ```
 
 ### 2. llama.cpp (`llama-server`)
-Richiesto per eseguire l'infezezza locale multimodale dei modelli VLM con accelerazione GPU.
+Richiesto per eseguire l'inferenza locale multimodale dei modelli VLM con accelerazione GPU.
 
 * **macOS (con accelerazione Metal GPU)**:
   ```bash
@@ -85,20 +97,19 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-*(In alternativa puoi usare `uv venv` per una creazione istantanea).*
-
-### 2. Installazione delle Dipendenze Python
-Installa tutti i pacchetti necessari specificati nel file [`requirements.txt`](requirements.txt):
+### 2. Installazione del Pacchetto e Dipendenze Python
+Installa le dipendenze Python ed il pacchetto in modalità editable:
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
+*(Oppure installa direttamente le dipendenze via `pip install -r requirements.txt`).*
 
 ---
 
 ## 🔍 Validazione Automatica dell'Ambiente
 
-Il progetto include uno script di diagnostica completo ([`validate_setup.py`](validate_setup.py)) che controlla se tutti i componenti di sistema, l'ambiente Python, l'eseguibile `llama-server`, la connessione ADB ed i file `.gguf` dei modelli sono pronti all'uso:
+Questo progetto include uno script di diagnostica completo ([`validate_setup.py`](validate_setup.py)) che controlla se tutti i componenti di sistema, l'ambiente Python, l'eseguibile `llama-server`, la connessione ADB ed i file `.gguf` dei modelli sono pronti all'uso:
 
 ```bash
 python validate_setup.py
@@ -106,7 +117,7 @@ python validate_setup.py
 
 ### Controlli effettuati da `validate_setup.py`:
 1. **Dipendenze Python**: `PyYAML`, `Pillow`, `ImageHash`, `Rich`, `HTTPX`.
-2. **Moduli Interni Framework**: `mobilerun_tester.core`, `runner`, `cli`.
+2. **Moduli Interni Framework**: `q_test_arsenal.core`, `runner`, `cli`.
 3. **ADB & Dispositivi**: Presenza del comando `adb` e presenza di uno smartphone/emulatore Android connesso.
 4. **VLM Engine**: Presenza dell'eseguibile `llama-server` e relativo stato health.
 5. **Modelli VLM**: Verifica esistenza su disco dei file `.gguf` del modello e dell'mmproj configurati.
@@ -116,8 +127,8 @@ python validate_setup.py
 
 ## ⚙️ Dove Impostare la Configurazione
 
-La configurazione globale del framework si trova in:
-👉 **[`mobilerun_tester/config/default_config.yaml`](mobilerun_tester/config/default_config.yaml)**
+La configurazione globale di **Q - Test Arsenal** si trova in:
+👉 **[`q_test_arsenal/config/default_config.yaml`](q_test_arsenal/config/default_config.yaml)**
 
 ### Parametri Principali
 
@@ -149,7 +160,7 @@ Quando il framework viene avviato:
 1. Se il parametro `device.serial` nel file di configurazione è vuoto (`""`) oppure il dispositivo salvato **non è attualmente connesso** via USB/ADB:
    - Il sistema scansiona i dispositivi Android ed emulatori collegati.
    - Viene mostrato un **menu di selezione interattivo** da terminale.
-2. Una volta selezionato il dispositivo desiderato (es. `R52M904J1QM`), il suo serial viene **salvato automaticamente nelle preferenze** ([`mobilerun_tester/config/default_config.yaml`](mobilerun_tester/config/default_config.yaml)).
+2. Una volta selezionato il dispositivo desiderato (es. `R52M904J1QM`), il suo serial viene **salvato automaticamente nelle preferenze** ([`q_test_arsenal/config/default_config.yaml`](q_test_arsenal/config/default_config.yaml)).
 3. Per le esecuzioni successive, il sistema utilizzerà direttamente il dispositivo salvato senza più richiedere l'intervento dell'utente!
 
 ---
@@ -175,6 +186,10 @@ steps:
     target: "Campo di testo per l'URL API"
     value: "betacc.planetps.it"
 
+  - type: "type_text"
+    target: "Campo di testo per lo Shop Code"
+    value: "dev2"
+
   - type: "action"
     target: "Pulsante 'Save' per salvare le impostazioni"
 
@@ -186,7 +201,6 @@ steps:
     target: "Area di testo per la Password"
     value: "${USER_PASSWORD}"
 
-  - type: "action"
   - type: "wait"
     seconds: 2                                                  # Pausa di attesa in secondi (per completamento animazioni)
 
@@ -195,7 +209,7 @@ steps:
 
 assertion:
   wait_seconds: 2                                               # Pausa prima di catturare lo screenshot finale dell'asserzione
-  description: "La schermata di Login è scomparsa e si è aperto il catalogo dell'applicazione."
+  description: "La schermata di Login è scomparsa ed è visibile la schermata di caricamento/sincronizzazione o il carrello principale."
 ```
 
 ### Tipi di Step Disponibili:
@@ -204,7 +218,9 @@ assertion:
 * `action_until`: Ripete il tap fino a quando la condizione `until_condition` non risulta vera.
 * `long_press_until`: Esegue la pressione prolungata (Long Press) fino al soddisfacimento di `until_condition`.
 * `wait`: Pausa di attesa in secondi (`seconds: N`) per consentire il completamento di transizioni UI o animazioni.
-* `include_scenario`: Include ed esegue i passi di un altro scenario YAML ---
+* `include_scenario`: Include ed esegue i passi di un altro scenario YAML (`scenario: "scenarios/login_flow.yaml"`).
+
+---
 
 ## 🏆 Suite Manifest & Gestione Errori (`continue_on_failure`)
 
@@ -227,7 +243,7 @@ scenarios:
 
 Per eseguire l'intera suite ordinata dal manifest:
 ```bash
-python -m mobilerun_tester.cli.main scenarios/master_suite.yaml
+q-test scenarios/master_suite.yaml
 ```
 
 ### 2. Controllo del Flusso di Errore (`continue_on_failure`)
@@ -235,21 +251,23 @@ Puoi configurare se arrestare l'esecuzione oppure continuare anche se uno step o
 * **Nei Manifest o Scenari YAML**: Impostando `continue_on_failure: true` nel file YAML.
 * **Da Comando CLI**: Aggiungendo la flag `--continue-on-failure`:
   ```bash
-  python -m mobilerun_tester.cli.main scenarios/login_flow.yaml --continue-on-failure
+  q-test scenarios/login_flow.yaml --continue-on-failure
   ```
 
 ---
 
-## 🏃 Esecuzione dei Test (CLI)
+## 🏃 Esecuzione dei Test (CLI `q-test`)
+
+Il framework fornisce il pratico comando CLI **`q-test`** (ed in alternativa `python -m q_test_arsenal.cli.main`):
 
 ### 1. Esecuzione Batch (Tutti gli scenari in `scenarios/`)
 ```bash
-python -m mobilerun_tester.cli.main
+q-test
 ```
 
 ### 2. Esecuzione di uno Scenario Specifico
 ```bash
-python -m mobilerun_tester.cli.main scenarios/login_flow.yaml
+q-test scenarios/login_flow.yaml
 ```
 
 ### 3. ⚡ Registrazione ed Esecuzione Ibrida con Macro (`--save-macro` e `--use-macro`)
@@ -257,13 +275,13 @@ Per registrare i tocchi e velocizzare l'esecuzione saltando le chiamate VLM quan
 
 * **Registrazione ed esportazione Macro JSON**:
   ```bash
-  python -m mobilerun_tester.cli.main scenarios/login_flow.yaml --save-macro
+  q-test scenarios/login_flow.yaml --save-macro
   ```
   Salva la sequenza delle azioni, coordinate percentuali ed hash visivi in `scenarios/macros/login_flow.macro.json`.
 
 * **Esecuzione Ibrida (Fast-Path + Fallback VLM)**:
   ```bash
-  python -m mobilerun_tester.cli.main scenarios/login_flow.yaml --use-macro
+  q-test scenarios/login_flow.yaml --use-macro
   ```
   Confronta lo schermo attuale con l'hash salvato: se la schermata coincide ($\ge 85\%$), esegue il tocco in **~100ms** senza impegnare il VLM; se lo schermo differisce, passa automaticamente la palla all'IA visiva (**VLM 2-Pass Zoom Crop**).
 
@@ -276,7 +294,7 @@ Dopo l'esecuzione di un test, il framework genera automaticamente:
 1. **Dashboard Master & Report Singoli Interattivi**:
    * Salvati nella cartella `reports/` (es: `reports/login_flow_report.html` e `reports/master_report.html`).
    * **Navigazione 1-Click**: La Master Dashboard contiene i pulsanti diretti (`📄 Apri Report Dettagliato →`) verso ciascun sotto-report, e ogni report singolo include un link di ritorno (`← Torna alla Master Dashboard`).
-   * **Screenshot dell'Asserzione Visiva Finale**: Evidenzia l'immagine ed il testo dell'esito dell'asserzione finale visiva.
+   * **Screenshot dell'Asserzione Visiva Finale**: Evidenzia l'immagine ed il testo dell'esito dell'asserzione finale visiva (`final_assertion_<scenario>.png`).
 
 2. **Telemetria delle Latenze & KPI Performance**:
    * Per ogni step vengono misurati con precisione al millisecondo: `📷 Screencap`, `🧠 VLM Pass 1 (Coarse)`, `🔎 VLM Pass 2 (Zoom Crop Fine)`, `⚡ ADB Input`.
@@ -286,7 +304,7 @@ Dopo l'esecuzione di un test, il framework genera automaticamente:
    * Se uno step o tocco fallisce, il report HTML genera una card speciale di debug in stile dark-magenta contenente la risposta JSON raw del VLM, le coordinate tentate, le note di retry ed il ritaglio zoom sull'area bersaglio.
 
 4. **File di Log Dettagliati**:
-   * Salvati in `logs/run_YYYYMMDD_HHMMSS.log`, contenenti tutte le chiamate ADB, risposte JSON dei modelli e stack trace per il debugging.
+   * Salvati in `logs/run_YYYYMMDD_HHMMSS.log` (automaticamente ignorati da git), contenenti tutte le chiamate ADB, risposte JSON dei modelli e stack trace per il debugging.
 
 ---
 
@@ -296,7 +314,7 @@ Questo progetto nasce ed è stato sviluppato come evoluzione ed estensione di **
 
 ### 💡 Il contributo di `mobilerun` a questo progetto:
 * **Infrastruttura Agenti & Tooling Mobile**: `mobilerun` fornisce l'architettura di base per l'interazione con i dispositivi (ADB/iOS), il supporto multimodale per i provider LLM/VLM ed il sistema di macro/telemetria.
-* **MobileRun Tester**: Sviluppato da **Emanuele Coltro**, estende l'infrastruttura originale trasformandola in un framework autonomo di testing E2E basato su scenari YAML visivi, motore di grounding a due livelli (**2-Pass Zoom Crop**), report HTML interattivi e CLI avanzata con spinner.
+* **Q - Test Arsenal**: Sviluppato in autonomia da **Emanuele Coltro**, estende l'infrastruttura originale trasformandola in un framework autonomo di testing E2E visivo basato su scenari YAML, motore di grounding a due livelli (**2-Pass Zoom Crop**), report HTML interattivi con telemetria avanzata, Fast-Path Macro ed il comando CLI `q-test`.
 
 Un sentito ringraziamento a Niels Schmidt e al team di DroidRun per lo straordinario lavoro svolto nel progetto originale.
 

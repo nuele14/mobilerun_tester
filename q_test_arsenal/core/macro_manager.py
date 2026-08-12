@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from PIL import Image
 import imagehash
-from mobilerun_tester.core.logger import GetLogger, console
+from q_test_arsenal.core.logger import GetLogger, console
 
 
 class MacroManager:

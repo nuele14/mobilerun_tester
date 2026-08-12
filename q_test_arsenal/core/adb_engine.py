@@ -15,7 +15,7 @@ import yaml
 from pathlib import Path
 from typing import Tuple, List
 from PIL import Image
-from mobilerun_tester.core.logger import GetLogger, console
+from q_test_arsenal.core.logger import GetLogger, console
 
 
 class ADBDevice:
@@ -23,7 +23,7 @@ class ADBDevice:
 
     # === [ SECTION 1: INIT & GEOMETRY ] ===
 
-    def __init__(self, serial: str = "", adb_path: str = "adb", config_path: str = "mobilerun_tester/config/default_config.yaml"):
+    def __init__(self, serial: str = "", adb_path: str = "adb", config_path: str = "q_test_arsenal/config/default_config.yaml"):
         self.adb_path = shutil.which(adb_path) or adb_path
         self.config_path = config_path
         self.serial = self.ResolveOrSelectDevice(serial)

@@ -127,7 +127,7 @@ class ReportGenerator:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MobileRun Tester Report - {summary.get('scenario_name')}</title>
+    <title>Q - Test Arsenal Report - {summary.get('scenario_name')}</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
@@ -220,7 +220,7 @@ class ReportGenerator:
         </div>
         <div class="header-card">
             <div>
-                <h1>📱 MobileRun Test Suite</h1>
+                <h1>📱 Q - Test Arsenal</h1>
                 <div class="meta">Scenario: <strong>{summary.get('scenario_name')}</strong></div>
             </div>
             <div>{status_badge}</div>
@@ -257,7 +257,7 @@ class ReportGenerator:
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html_content)
 
-        print(f"📊 [MobileRun Report] Report HTML generato con successo in: {out_file.resolve()}")
+        print(f"📊 [Q - Test Arsenal Report] Report HTML generato con successo in: {out_file.resolve()}")
         return str(out_file.resolve())
 
     # =========================================================================
@@ -306,7 +306,7 @@ class ReportGenerator:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MobileRun Test Suite - Master Report</title>
+    <title>Q - Test Arsenal - Master Report</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
@@ -400,7 +400,7 @@ class ReportGenerator:
     <div class="container">
         <div class="header-card">
             <div>
-                <h1>🏆 MobileRun Master Test Suite</h1>
+                <h1>🏆 Q - Test Arsenal Master Report</h1>
                 <div class="meta">Riepilogo Esecuzione Batch Scenari</div>
             </div>
             <div>{master_badge}</div>

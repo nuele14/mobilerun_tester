@@ -35,7 +35,7 @@ def EnsureGitIgnoreLogs():
 
 
 def GetLogger() -> logging.Logger:
-    """Gets or initializes the global mobilerun_tester logger writing to logs/ directory."""
+    """Gets or initializes the global q_test_arsenal logger writing to logs/ directory."""
     global _LOGGER, _LOG_FILE_PATH
 
     if _LOGGER is not None:
@@ -49,7 +49,7 @@ def GetLogger() -> logging.Logger:
     session_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     _LOG_FILE_PATH = log_dir / f"run_{session_str}.log"
 
-    _LOGGER = logging.getLogger("mobilerun_tester")
+    _LOGGER = logging.getLogger("q_test_arsenal")
     _LOGGER.setLevel(logging.DEBUG)
     _LOGGER.handlers.clear()
 

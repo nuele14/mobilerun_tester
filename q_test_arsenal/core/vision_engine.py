@@ -15,7 +15,7 @@ import time
 import urllib.request
 from typing import Tuple, Dict, Any
 from PIL import Image, ImageDraw
-from mobilerun_tester.core.logger import GetLogger
+from q_test_arsenal.core.logger import GetLogger
 
 
 # === [ SECTION 1: VISUAL OVERLAY ] ===

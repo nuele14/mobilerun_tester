@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
-VALIDATORE COMPLETO DELL'AMBIENTE DI SVILUPPO E RUNTIME PER MOBILERUN TESTER
+VALIDATORE COMPLETO DELL'AMBIENTE DI SVILUPPO E RUNTIME PER Q - TEST ARSENAL
 ===============================================================================
 Verifica:
 1. Dipendenze Python (PyYAML, Pillow, ImageHash, Rich, httpx).
@@ -52,18 +52,18 @@ def check_python_packages() -> bool:
 
 
 def check_project_modules() -> bool:
-    print_header("2. VERIFICA MODULI PROGETTO MOBILERUN TESTER")
+    print_header("2. VERIFICA MODULI PROGETTO Q - TEST ARSENAL")
     all_ok = True
 
     modules = [
-        ("mobilerun_tester.core.logger", "Core Logger & Spinners"),
-        ("mobilerun_tester.core.adb_engine", "ADB Engine & Touch Primitive"),
-        ("mobilerun_tester.core.vision_engine", "Vision Engine (Zoom Crop 2-Passes)"),
-        ("mobilerun_tester.core.server_manager", "Llama Server Manager"),
-        ("mobilerun_tester.core.scenario_parser", "Scenario Parser YAML"),
-        ("mobilerun_tester.runner.test_runner", "Test Runner"),
-        ("mobilerun_tester.runner.report_generator", "Report Generator HTML"),
-        ("mobilerun_tester.cli.main", "CLI Entrypoint"),
+        ("q_test_arsenal.core.logger", "Core Logger & Spinners"),
+        ("q_test_arsenal.core.adb_engine", "ADB Engine & Touch Primitive"),
+        ("q_test_arsenal.core.vision_engine", "Vision Engine (Zoom Crop 2-Passes)"),
+        ("q_test_arsenal.core.server_manager", "Llama Server Manager"),
+        ("q_test_arsenal.core.scenario_parser", "Scenario Parser YAML"),
+        ("q_test_arsenal.runner.test_runner", "Test Runner"),
+        ("q_test_arsenal.runner.report_generator", "Report Generator HTML"),
+        ("q_test_arsenal.cli.main", "CLI Entrypoint"),
     ]
 
     for mod_path, label in modules:
@@ -82,7 +82,7 @@ def check_config_and_scenarios() -> Tuple[bool, Dict[str, Any]]:
     all_ok = True
     config = {}
 
-    config_path = Path("mobilerun_tester/config/default_config.yaml")
+    config_path = Path("q_test_arsenal/config/default_config.yaml")
     if config_path.exists():
         try:
             import yaml
@@ -198,7 +198,7 @@ def check_vlm_engine_and_models(config: Dict[str, Any]) -> bool:
 
 def main():
     print("=" * 60)
-    print(" 🚀 MOBILERUN TESTER - VALIDAZIONE AMBIENTE E COMPONENTS")
+    print(" 🚀 Q - TEST ARSENAL - VALIDAZIONE AMBIENTE E COMPONENTI")
     print("=" * 60)
 
     p_ok = check_python_packages()

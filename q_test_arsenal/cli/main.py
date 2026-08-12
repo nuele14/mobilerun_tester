@@ -28,10 +28,10 @@ CLI Dispatch Diagram:
 import argparse
 import sys
 from pathlib import Path
-from mobilerun_tester.core.scenario_parser import ScenarioParser
-from mobilerun_tester.runner.test_runner import TestRunner
-from mobilerun_tester.runner.report_generator import ReportGenerator
-from mobilerun_tester.core.logger import GetLogger, console
+from q_test_arsenal.core.scenario_parser import ScenarioParser
+from q_test_arsenal.runner.test_runner import TestRunner
+from q_test_arsenal.runner.report_generator import ReportGenerator
+from q_test_arsenal.core.logger import GetLogger, console
 
 
 def ExecuteCommandLineInterface():
@@ -40,10 +40,10 @@ def ExecuteCommandLineInterface():
     [Why] Zero-argument invocation defaults to running all test scenarios in 'scenarios/' directory.
     """
     logger = GetLogger()
-    logger.info("Initializing MobileRun Tester CLI")
+    logger.info("Initializing Q - Test Arsenal CLI")
 
     parser = argparse.ArgumentParser(
-        description="MobileRun Tester - Vision-Driven Automated Mobile Testing Framework"
+        description="Q - Test Arsenal - Vision-Driven Automated Mobile Testing Framework"
     )
     parser.add_argument(
         "scenario",
@@ -53,7 +53,7 @@ def ExecuteCommandLineInterface():
     )
     parser.add_argument(
         "--config",
-        default="mobilerun_tester/config/default_config.yaml",
+        default="q_test_arsenal/config/default_config.yaml",
         help="Percorso al file di configurazione globale"
     )
     parser.add_argument(
@@ -83,13 +83,13 @@ def ExecuteCommandLineInterface():
     config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
     runner = TestRunner(config, config_path=str(config_path))
 
-    console.print("\n[bold cyan]🚀 MOBILERUN TESTER[/bold cyan] [dim]- Framework di Testing Mobile[/dim]")
+    console.print("\n[bold cyan]🚀 Q - TEST ARSENAL[/bold cyan] [dim]- Framework di Testing Mobile[/dim]")
 
     # =========================================================================
     # [Guide] MODE 1: BATCH SUITE EXECUTION (NO SCENARIO ARGUMENT PASSED)
     # =========================================================================
     if not args.scenario:
-        scenarios_dirs = [Path("scenarios"), Path("mobilerun_tester/scenarios")]
+        scenarios_dirs = [Path("scenarios"), Path("q_test_arsenal/scenarios")]
         scenario_files = []
         for s_dir in scenarios_dirs:
             if s_dir.exists():

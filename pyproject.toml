@@ -83,10 +83,12 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["mobilerun"]
+packages = ["mobilerun", "q_test_arsenal"]
 
 [project.scripts]
 mobilerun = "mobilerun.cli.main:cli"
+q-test = "q_test_arsenal.cli.main:main"
+q-arsenal = "q_test_arsenal.cli.main:main"
 
 [tool.ruff]
 line-length = 100

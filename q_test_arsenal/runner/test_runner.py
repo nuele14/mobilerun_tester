@@ -1,18 +1,18 @@
 import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from mobilerun_tester.core.adb_engine import ADBDevice
-from mobilerun_tester.core.vision_engine import VisionEngine, DrawTapTargetHighlight
-from mobilerun_tester.core.server_manager import LlamaServerManager
-from mobilerun_tester.core.scenario_parser import ScenarioParser
-from mobilerun_tester.core.macro_manager import MacroManager
-from mobilerun_tester.core.logger import GetLogger, GetLogFilePath, StatusSpinner, console
+from q_test_arsenal.core.adb_engine import ADBDevice
+from q_test_arsenal.core.vision_engine import VisionEngine, DrawTapTargetHighlight
+from q_test_arsenal.core.server_manager import LlamaServerManager
+from q_test_arsenal.core.scenario_parser import ScenarioParser
+from q_test_arsenal.core.macro_manager import MacroManager
+from q_test_arsenal.core.logger import GetLogger, GetLogFilePath, StatusSpinner, console
 
 
 class TestRunner:
     """[Teacher] Orchestrates test steps and gathers performance metrics."""
 
-    def __init__(self, config: Dict[str, Any], config_path: str = "mobilerun_tester/config/default_config.yaml"):
+    def __init__(self, config: Dict[str, Any], config_path: str = "q_test_arsenal/config/default_config.yaml"):
         self.config = config
         self.config_path = config_path
         self.server_mgr = LlamaServerManager(config)
