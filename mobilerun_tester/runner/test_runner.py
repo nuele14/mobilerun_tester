@@ -241,6 +241,13 @@ class TestRunner:
                     adb_ms = int((time.time() - t_adb_start) * 1000)
                     step_notes = f"⚡ Macro Fast-Path ({macro_sim_score*100:.0f}% match) typed '{val}' at ({x:.1f}%, {y:.1f}%)" if macro_match_found else f"Typed '{val}' at ({x:.1f}%, {y:.1f}%)"
 
+                elif stype == "wait":
+                    wait_sec = float(step.get("seconds") or step.get("duration") or step.get("duration_seconds") or 1.0)
+                    x, y = 50.0, 50.0
+                    with StatusSpinner(f"⏳ Pausa di {wait_sec}s in corso..."):
+                        time.sleep(wait_sec)
+                    step_notes = f"Pausa di attesa di {wait_sec}s completata."
+
                 dur = round(time.time() - t_start, 2)
                 step_ms = int(dur * 1000)
 
@@ -248,8 +255,8 @@ class TestRunner:
                     recorded_actions.append({
                         "step_index": i,
                         "action_type": stype,
-                        "target_description": target,
-                        "value": val,
+                        "target_description": target or f"Wait {dur}s",
+                        "value": str(dur) if stype == "wait" else val,
                         "coordinates": {
                             "x_pct": round(x, 2),
                             "y_pct": round(y, 2),
@@ -271,12 +278,12 @@ class TestRunner:
                         logger.warning(f"   • Attempt {att_t.get('attempt')}: Target=({att_t.get('final_x'):.1f}%, {att_t.get('final_y'):.1f}%) | AssertionReason='{att_t.get('assertion_reason')}' | RawVLM='{att_t.get('raw_response')}'")
 
                 if step_passed:
-                    console.print(f" [bold green]✔[/bold green] [bold]Step {i}/{total_steps}[/bold] {stype} | '{target}' ({dur}s) [dim](VLM: {vlm_tot_ms}ms, ADB: {adb_ms}ms)[/dim]")
+                    console.print(f" [bold green]✔[/bold green] [bold]Step {i}/{total_steps}[/bold] {stype} | '{target or 'wait'}' ({dur}s) [dim](VLM: {vlm_tot_ms}ms, ADB: {adb_ms}ms)[/dim]")
                 else:
-                    console.print(f" [bold red]✖[/bold red] [bold]Step {i}/{total_steps}[/bold] {stype} | '{target}' - [bold red]FALLITO[/bold red] ({dur}s)")
+                    console.print(f" [bold red]✖[/bold red] [bold]Step {i}/{total_steps}[/bold] {stype} | '{target or 'wait'}' - [bold red]FALLITO[/bold red] ({dur}s)")
 
                 step_results.append({
-                    "step_index": i, "type": stype, "target": target, "passed": step_passed,
+                    "step_index": i, "type": stype, "target": target or f"Wait {dur}s", "passed": step_passed,
                     "duration_seconds": dur, "screenshot": shot_path,
                     "tapped_screenshot": shot_path.replace(".png", "_tapped.png"), "notes": step_notes,
                     "telemetry": {
@@ -288,7 +295,7 @@ class TestRunner:
                         "total_step_ms": step_ms
                     },
                     "root_cause_trace": {
-                        "target": target,
+                        "target": target or f"Wait {dur}s",
                         "step_notes": step_notes,
                         "attempts": attempt_traces
                     } if (not step_passed or attempt_traces) else None
@@ -298,6 +305,11 @@ class TestRunner:
             ast_passed, ast_reason, final_shot = True, "No final assertion defined.", ""
             if assertion:
                 desc = assertion.get("description", "")
+                wait_sec = float(assertion.get("wait_seconds") or assertion.get("wait") or 0.0)
+                if wait_sec > 0:
+                    with StatusSpinner(f"⏳ Attesa di {wait_sec}s prima dell'asserzione finale visiva..."):
+                        time.sleep(wait_sec)
+
                 with StatusSpinner(f"🔍 Verifica asserzione finale visiva: '{desc}'..."):
                     final_shot = str(self.screenshots_dir / f"final_assertion_{Path(scenario_path).stem}.png")
                     adb.CaptureScreenBuffer(final_shot)

@@ -187,9 +187,14 @@ steps:
     value: "${USER_PASSWORD}"
 
   - type: "action"
+  - type: "wait"
+    seconds: 2                                                  # Pausa di attesa in secondi (per completamento animazioni)
+
+  - type: "action"
     target: "Pulsante azzurro con scritto 'Login'"
 
 assertion:
+  wait_seconds: 2                                               # Pausa prima di catturare lo screenshot finale dell'asserzione
   description: "La schermata di Login è scomparsa e si è aperto il catalogo dell'applicazione."
 ```
 
@@ -198,6 +203,7 @@ assertion:
 * `type_text`: Grounding VLM + Selezione + Pulizia automatica + Inserimento del testo specificato in `value`.
 * `action_until`: Ripete il tap fino a quando la condizione `until_condition` non risulta vera.
 * `long_press_until`: Esegue la pressione prolungata (Long Press) fino al soddisfacimento di `until_condition`.
+* `wait`: Pausa di attesa in secondi (`seconds: N`) per consentire il completamento di transizioni UI o animazioni.
 
 ---
 

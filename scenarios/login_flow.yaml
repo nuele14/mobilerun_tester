@@ -30,4 +30,5 @@ steps:
     target: "Pulsante azzurro con scritto 'Login'"
 
 assertion:
+  wait_seconds: 2
   description: "La schermata di login non è più presente ed è visibile la schermata di caricamento/sincronizzazione dati (schermo bianco con uno spinner o indicatore di caricamento verde al centro e le relative informazioni sotto) OPPURE la schermata principale del carrello/cassa con le opzioni per la ricerca clienti, sconti o prodotti."
