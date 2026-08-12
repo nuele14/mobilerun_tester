@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/Q_logo.jpeg" alt="Q - Test Arsenal Logo" width="360" style="border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+</p>
+
 # 🚀 Q - Test Arsenal
 
 **Q - Test Arsenal** è un framework autonomo di testing automatizzato E2E visivo per applicazioni mobile (**Flutter & Native Android**), basato su modelli Vision-Language (**VLM**) eseguiti completamente in locale.
