@@ -91,13 +91,23 @@ class TestRunner:
                             macro_match_found = True
                             saved_action_coords = m_act.get("coordinates", {})
                             logger.info(f"⚡ [Macro Fast Path] Step {i}: Similarity {macro_sim_score*100:.1f}% >= 85%. Replay a ({saved_action_coords.get('x_pct')}%, {saved_action_coords.get('y_pct')}%)")
+                        else:
+                            logger.warning(f"⚠️ [Macro Divergence] Step {i}: Similarity {macro_sim_score*100:.1f}% < 85%. Fallback automatico a VLM.")
+                            console.print(f" [yellow]⚠️ Step {i} Macro Divergence ({macro_sim_score*100:.0f}% match < 85%)[/yellow] -> Fallback VLM")
+                    else:
+                        logger.info(f"ℹ️ [Macro Skip] Step {i}: Step non presente nel file macro (totale salvati: {len(macro_actions)}).")
+                        console.print(f" [dim]ℹ️ Step {i} non presente nel file macro (salvati: {len(macro_actions)})[/dim] -> Esecuzione VLM")
 
                 if stype in ("action_until", "long_press_until"):
                     cond = step.get("until_condition", "")
-                    with StatusSpinner(f"🔍 Verifica condizione visiva '{cond}'..."):
-                        res_ast = vision.VerifyScreenAssertion(shot_path, cond)
-                        is_fulfilled = res_ast.get("pass")
-                        vlm_tot_ms += res_ast.get("vlm_ms", 0)
+                    is_fulfilled = False
+
+                    # If not macro fast-path, check prior condition
+                    if not macro_match_found:
+                        with StatusSpinner(f"🔍 Verifica condizione visiva '{cond}'..."):
+                            res_ast = vision.VerifyScreenAssertion(shot_path, cond)
+                            is_fulfilled = res_ast.get("pass")
+                            vlm_tot_ms += res_ast.get("vlm_ms", 0)
 
                     if is_fulfilled:
                         step_notes = f"Condition '{cond}' verified prior to tap."
@@ -108,6 +118,7 @@ class TestRunner:
                                 x = float(saved_action_coords.get("x_pct", 50.0))
                                 y = float(saved_action_coords.get("y_pct", 50.0))
                                 DrawTapTargetHighlight(shot_path, x, y, shot_path.replace(".png", "_tapped.png"), target_desc=f"[Macro Fast Path] {target}")
+                                v_metrics = {}
                             else:
                                 with StatusSpinner(f"🧠 Grounding VLM per '{target}' (Tentativo {att})..."):
                                     x, y, v_metrics = vision.PredictCoordinatesFast(shot_path, target, force_zoom=use_zoom)
@@ -144,7 +155,8 @@ class TestRunner:
                                 })
 
                                 if ast_check.get("pass"):
-                                    succ, step_notes = True, f"Condition met at attempt {att}."
+                                    succ = True
+                                    step_notes = f"⚡ Macro Fast-Path ({macro_sim_score*100:.0f}% match) met condition at attempt {att}." if macro_match_found else f"Condition met at attempt {att}."
                                     break
                             shot_path = after_shot
 
