@@ -1,0 +1,20 @@
+{
+  "project_name": "Q - Test Arsenal",
+  "version": "1.0.0",
+  "version_name": "GoldenEye Initial Release",
+  "release_date": "2026-08-12",
+  "codename": "GoldenEye",
+  "description": "Vision-Driven Automated Mobile Testing Framework for Android & Flutter inspired by Ian Fleming's Q",
+  "author": "Emanuele Coltro",
+  "license": "MIT",
+  "features": [
+    "2-Pass Vision Grounding (Coarse + Fine Bounding Box Zoom Crop)",
+    "Action-Level Fast-Path Macro Recording & Replay (pHash screen state matching)",
+    "Meta-Suite Manifest YAML support with nested scenarios",
+    "Configurable continue_on_failure flow control at step, scenario, and suite levels",
+    "Visual Assertion Validation with auto-saved final screenshot",
+    "Deep Root Cause Analysis cards in interactive single & master HTML reports",
+    "Interactive ADB Device Selection Menu with automatic preference saving",
+    "Built-in 5-stage setup validator script (validate_setup.py)"
+  ]
+}

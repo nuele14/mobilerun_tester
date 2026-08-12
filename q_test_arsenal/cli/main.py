@@ -28,7 +28,7 @@ CLI Dispatch Diagram:
 import argparse
 import sys
 from pathlib import Path
-from q_test_arsenal import __version__, Q_ASCII_ART
+from q_test_arsenal import __version__, __version_name__, __release_date__, Q_ASCII_ART
 from q_test_arsenal.core.scenario_parser import ScenarioParser
 from q_test_arsenal.runner.test_runner import TestRunner
 from q_test_arsenal.runner.report_generator import ReportGenerator
@@ -85,7 +85,7 @@ def ExecuteCommandLineInterface():
 
     if args.version:
         console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
-        console.print(f"🚀 [bold white]Q - Test Arsenal[/bold white] [dim]v{__version__}[/dim]")
+        console.print(f"🚀 [bold white]Q - Test Arsenal[/bold white] [bold yellow]v{__version__}[/bold yellow] [dim]('{__version_name__}' - Rilasciato il {__release_date__})[/dim]")
         console.print("🕵️‍♂️ [dim]The Quartermaster's Mobile Vision Testing Framework (Inspired by Ian Fleming's Q)[/dim]\n")
         sys.exit(0)
 

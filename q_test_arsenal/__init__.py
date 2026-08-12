@@ -1,10 +1,24 @@
-"""
-Q - Test Arsenal - Vision-Driven Automated Mobile Testing Framework
-"""
+import json
+from pathlib import Path
 
-__version__ = "1.0.0"
-__author__ = "Emanuele Coltro"
-__license__ = "MIT"
+_VERSION_FILE = Path(__file__).parent / "version.json"
+_VERSION_DATA = {}
+if _VERSION_FILE.exists():
+    try:
+        with open(_VERSION_FILE, "r", encoding="utf-8") as _f:
+            _VERSION_DATA = json.load(_f)
+    except Exception:
+        pass
+
+__version__ = _VERSION_DATA.get("version", "1.0.0")
+__version_name__ = _VERSION_DATA.get("version_name", "GoldenEye Initial Release")
+__release_date__ = _VERSION_DATA.get("release_date", "2026-08-12")
+__author__ = _VERSION_DATA.get("author", "Emanuele Coltro")
+__license__ = _VERSION_DATA.get("license", "MIT")
+
+def GetVersionInfo() -> dict:
+    """Returns complete version metadata dictionary."""
+    return _VERSION_DATA
 
 Q_ASCII_ART = r"""
      &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&$                                                       .:::::::::::::::                                                                     
