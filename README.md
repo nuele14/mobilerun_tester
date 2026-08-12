@@ -204,21 +204,22 @@ assertion:
 * `action_until`: Ripete il tap fino a quando la condizione `until_condition` non risulta vera.
 * `long_press_until`: Esegue la pressione prolungata (Long Press) fino al soddisfacimento di `until_condition`.
 * `wait`: Pausa di attesa in secondi (`seconds: N`) per consentire il completamento di transizioni UI o animazioni.
-* `include_scenario`: Include ed esegue i passi di un altro scenario YAML (`scenario: "scenarios/login_flow.yaml"`).
+* `include_scenario`: Include ed esegue i passi di un altro scenario YAML ---
 
----
+## 🏆 Suite Manifest & Gestione Errori (`continue_on_failure`)
 
-## 🏆 Suite Manifest (Scenari che contengono altri Scenari)
-
-Puoi creare un file YAML di Suite (es: `scenarios/master_suite.yaml`) per ordinare ed eseguire in sequenza precisa varie suite di test dell'applicazione, specificando per ciascuna anche le preferenze delle macro:
+### 1. Scenari che contengono altri Scenari
+Puoi creare un file YAML di Suite (es: `scenarios/master_suite.yaml`) per ordinare ed eseguire in sequenza precisa varie suite di test dell'applicazione, specificando per ciascuna le preferenze delle macro ed il comportamento in caso di errore:
 
 ```yaml
 name: "E2E Complete Test Suite"
 description: "Suite principale che ordina ed esegue in sequenza la configurazione, il login ed il checkout"
+continue_on_failure: true                        # Prosegue con i test successivi anche se uno scenario fallisce
 
 scenarios:
   - file: "scenarios/login_flow.yaml"
     use_macro: true
+    continue_on_failure: false                    # Se il login fallisce, ferma l'esecuzione della suite
 
   - file: "scenarios/checkout_flow.yaml"
     use_macro: false
@@ -228,6 +229,14 @@ Per eseguire l'intera suite ordinata dal manifest:
 ```bash
 python -m mobilerun_tester.cli.main scenarios/master_suite.yaml
 ```
+
+### 2. Controllo del Flusso di Errore (`continue_on_failure`)
+Puoi configurare se arrestare l'esecuzione oppure continuare anche se uno step o un'asserzione visiva fallisce:
+* **Nei Manifest o Scenari YAML**: Impostando `continue_on_failure: true` nel file YAML.
+* **Da Comando CLI**: Aggiungendo la flag `--continue-on-failure`:
+  ```bash
+  python -m mobilerun_tester.cli.main scenarios/login_flow.yaml --continue-on-failure
+  ```
 
 ---
 
@@ -260,11 +269,24 @@ Per registrare i tocchi e velocizzare l'esecuzione saltando le chiamate VLM quan
 
 ---
 
-## 📊 Report ed Ispezione Log
+## 📊 Telemetria, Root Cause Debugging e Report HTML
 
 Dopo l'esecuzione di un test, il framework genera automaticamente:
-1. **Report HTML Interattivi**: Salvati nella cartella `reports/` (es: `reports/login_flow_report.html` e dashboard `reports/master_report.html`). Contengono gli screenshot con l'overlay del mirino rosso e le etichette dei tocchi.
-2. **File di Log Dettagliati**: Salvati nella cartella `logs/run_YYYYMMDD_HHMMSS.log` (automaticamente ignorata da git), contenenti tutte le chiamate ADB, risposte JSON dei modelli e stack trace per il debugging.
+
+1. **Dashboard Master & Report Singoli Interattivi**:
+   * Salvati nella cartella `reports/` (es: `reports/login_flow_report.html` e `reports/master_report.html`).
+   * **Navigazione 1-Click**: La Master Dashboard contiene i pulsanti diretti (`📄 Apri Report Dettagliato →`) verso ciascun sotto-report, e ogni report singolo include un link di ritorno (`← Torna alla Master Dashboard`).
+   * **Screenshot dell'Asserzione Visiva Finale**: Evidenzia l'immagine ed il testo dell'esito dell'asserzione finale visiva.
+
+2. **Telemetria delle Latenze & KPI Performance**:
+   * Per ogni step vengono misurati con precisione al millisecondo: `📷 Screencap`, `🧠 VLM Pass 1 (Coarse)`, `🔎 VLM Pass 2 (Zoom Crop Fine)`, `⚡ ADB Input`.
+   * Le KPI medie di latenza VLM ed ADB vengono calcolate e sintetizzate nelle card in cima ai report HTML.
+
+3. **🔍 Root Cause Debug Analysis per Step Falliti**:
+   * Se uno step o tocco fallisce, il report HTML genera una card speciale di debug in stile dark-magenta contenente la risposta JSON raw del VLM, le coordinate tentate, le note di retry ed il ritaglio zoom sull'area bersaglio.
+
+4. **File di Log Dettagliati**:
+   * Salvati in `logs/run_YYYYMMDD_HHMMSS.log`, contenenti tutte le chiamate ADB, risposte JSON dei modelli e stack trace per il debugging.
 
 ---
 
