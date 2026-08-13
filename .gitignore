@@ -32,6 +32,11 @@ credentials.yaml
 **/credentials.yaml
 !**/credentials_example.yaml
 
+# Scenari di test, macro e dati d'ambiente dell'utente
+scenarios/*
+!scenarios/env_example.yaml
+!scenarios/.gitkeep
+
 .*/
 !.gitignore
 !.github/
