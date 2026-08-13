@@ -1,8 +1,14 @@
 # ===============================================================================
-# Q - TEST ARSENAL - CONFIG EXAMPLE TEMPLATE
+# Q - TEST ARSENAL - CONFIG EXAMPLE TEMPLATE WITH MULTI-PROVIDER SUPPORT
 # ===============================================================================
 
+provider:
+  type: "local"                                                 # local | openai | gemini | openrouter | groq | ollama
+  model_name: "UI-TARS-7B-DPO-Q4_K_M.gguf"
+  api_url: "http://127.0.0.1:8080/v1/chat/completions"
+
 server:
+  models_dir: "~/.modelli_llm"                                  # Local GGUF models directory path (Required for local llama-server)
   host: "127.0.0.1"
   port: 8080
   model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"
@@ -26,5 +32,10 @@ runner:
 credentials:
   USER_EMAIL: "your_user@example.com"
   USER_PASSWORD: "your_secret_password"
-  API_URL: "betacc.planetps.it"
-  SHOP_CODE: "dev2"
+  API_URL: "api.example.com"
+  SHOP_CODE: "demo"
+
+  OPENAI_API_KEY: "sk-your-openai-api-key"
+  GEMINI_API_KEY: "AIzaSy-your-gemini-api-key"
+  OPENROUTER_API_KEY: "sk-or-your-openrouter-api-key"
+  GROQ_API_KEY: "gsk_your_groq_api_key"

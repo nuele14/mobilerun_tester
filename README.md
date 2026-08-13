@@ -211,7 +211,7 @@ steps:
 
   - type: "type_text"
     target: "Campo di testo per l'URL API"
-    value: "betacc.planetps.it"
+    value: "api.example.com"
 
   - type: "type_text"
     target: "Campo di testo per lo Shop Code"

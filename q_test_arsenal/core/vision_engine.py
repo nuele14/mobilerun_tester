@@ -73,10 +73,24 @@ def DrawTapTargetHighlight(img_path: str, x_pct: float, y_pct: float, out_path: 
 # === [ SECTION 2: VISION ENGINE ] ===
 
 class VisionEngine:
-    """[Teacher] Client for VLM completion API (Qwen2-VL / UI-TARS) using commit 90e2091 precision logic."""
+    """[Teacher] Client for VLM completion API (Local llama-server & Cloud VLM Providers)."""
 
-    def __init__(self, server_url: str):
-        self.api_url = f"{server_url}/v1/chat/completions"
+    def __init__(self, server_url_or_config: Any):
+        if isinstance(server_url_or_config, dict):
+            self.api_url = server_url_or_config.get("api_url", "http://127.0.0.1:8080/v1/chat/completions")
+            self.model_name = server_url_or_config.get("model_name", "qwen2-vl")
+            self.api_key = server_url_or_config.get("api_key", "")
+        elif isinstance(server_url_or_config, str):
+            if not server_url_or_config.endswith("/v1/chat/completions") and not server_url_or_config.endswith("/chat/completions"):
+                self.api_url = f"{server_url_or_config}/v1/chat/completions"
+            else:
+                self.api_url = server_url_or_config
+            self.model_name = "qwen2-vl"
+            self.api_key = ""
+        else:
+            self.api_url = "http://127.0.0.1:8080/v1/chat/completions"
+            self.model_name = "qwen2-vl"
+            self.api_key = ""
 
     def DispatchVlmQuery(self, img_path: str, prompt: str) -> str:
         """[Function] Sends base64 image and prompt to VLM endpoint with temperature 0.1 (matching commit 90e2091)."""
@@ -84,12 +98,17 @@ class VisionEngine:
             b64_img = base64.b64encode(f.read()).decode("utf-8")
             
         payload = {
-            "model": "qwen2-vl",
+            "model": self.model_name,
             "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64_img}"}}]}],
             "temperature": 0.1
         }
-        req = urllib.request.Request(self.api_url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        req = urllib.request.Request(self.api_url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+        with urllib.request.urlopen(req, timeout=45) as resp:
             return json.loads(resp.read().decode("utf-8"))["choices"][0]["message"]["content"]
 
     def PredictElementCoordinates(self, img_path: str, target_desc: str) -> Tuple[float, float]:

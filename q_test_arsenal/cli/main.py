@@ -28,7 +28,15 @@ CLI Dispatch Diagram:
 import argparse
 import sys
 from pathlib import Path
-from q_test_arsenal import __version__, __version_name__, __release_date__, Q_ASCII_ART
+from q_test_arsenal import (
+    __version__,
+    __version_name__,
+    __release_date__,
+    __author__,
+    __copyright__,
+    __license__,
+    Q_ASCII_ART,
+)
 from q_test_arsenal.core.scenario_parser import ScenarioParser
 from q_test_arsenal.runner.test_runner import TestRunner
 from q_test_arsenal.runner.report_generator import ReportGenerator
@@ -53,7 +61,7 @@ def ExecuteCommandLineInterface():
         "--version",
         "-v",
         action="store_true",
-        help="Stampa la versione del framework e la grafica ASCII art di Q"
+        help="Stampa la versione del framework ed i dettagli del sistema"
     )
     parser.add_argument(
         "--config",
@@ -76,6 +84,12 @@ def ExecuteCommandLineInterface():
         help="Abilita l'esecutore ibrido Macro Fast-Path con fallback automatico al VLM"
     )
     parser.add_argument(
+        "--select-model",
+        "-m",
+        action="store_true",
+        help="Apre il menu interattivo per la selezione del modello e provider VLM (Local o Cloud)"
+    )
+    parser.add_argument(
         "--continue-on-failure",
         action="store_true",
         help="Prosegue con gli step o sotto-scenari successivi anche se uno step o asserzione fallisce"
@@ -85,14 +99,26 @@ def ExecuteCommandLineInterface():
 
     if args.version:
         console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
-        console.print(f"🚀 [bold white]Q - Test Arsenal[/bold white] [bold yellow]v{__version__}[/bold yellow] [dim]('{__version_name__}' - Rilasciato il {__release_date__})[/dim]")
-        console.print("🕵️‍♂️ [dim]The Quartermaster's Mobile Vision Testing Framework (Inspired by Ian Fleming's Q)[/dim]\n")
+        console.print("[bold white]Q - TEST ARSENAL SYSTEM INFORMATION[/bold white]")
+        console.print("[dim]------------------------------------------------------------[/dim]")
+        console.print(f"  • Framework Version : [bold yellow]{__version__}[/bold yellow] ({__version_name__})")
+        console.print(f"  • Release Date      : {__release_date__}")
+        console.print(f"  • Author            : {__author__}")
+        console.print(f"  • License           : {__license__}")
+        console.print(f"  • Copyright         : [dim]{__copyright__}[/dim]")
+        console.print("[dim]------------------------------------------------------------[/dim]\n")
         sys.exit(0)
+
+    config_path = Path(args.config)
+
+    from q_test_arsenal.core.provider_manager import ProviderManager
+    # Interactive Model Selection Menu if --select-model flag is passed OR if model is unselected/missing
+    if args.select_model or ProviderManager.NeedsModelSelection(str(config_path)):
+        ProviderManager.InteractiveSelectVisionModel(str(config_path))
 
     logger = GetLogger()
     logger.info("Initializing Q - Test Arsenal CLI")
 
-    config_path = Path(args.config)
     config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
     runner = TestRunner(config, config_path=str(config_path))
 
