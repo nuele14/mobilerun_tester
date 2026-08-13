@@ -26,6 +26,26 @@ class TestRunner:
         logger = GetLogger()
         scenario = ScenarioParser.LoadTestScenario(scenario_path, config=self.config)
         scenario_name = scenario.get("name", "Unknown Scenario")
+        steps = scenario.get("steps", [])
+        
+        # Pre-flight missing environment variable check
+        if self.config.get("runner", {}).get("check_missing_env_vars", True):
+            missing_vars = ScenarioParser.ValidateScenarioEnvironmentVariables(steps, config=self.config)
+            if missing_vars:
+                console.print("\n[bold yellow]⚠️  VARIABILI DI AMBIENTE MANCANTI:[/bold yellow]")
+                console.print("[italic white]Le seguenti variabili non sono state trovate in scenarios/env.yaml o nell'ambiente:[/italic white]")
+                for mv in missing_vars:
+                    console.print(f"  • [bold red]${{{mv}}}[/bold red]")
+                
+                strict = self.config.get("runner", {}).get("strict_missing_env_vars", False)
+                if strict:
+                    console.print("❌ [bold red]Esecuzione interrotta per modalità strict_missing_env_vars.[/bold red]\n")
+                    raise ValueError(f"Variabili di ambiente mancanti: {', '.join(missing_vars)}")
+                
+                from rich.prompt import Confirm
+                if not Confirm.ask("\n👉 Continuare comunque l'esecuzione dello scenario?", default=False):
+                    console.print(" 🛑 [bold yellow]Esecuzione annullata dall'utente.[/bold yellow]\n")
+                    sys.exit(0)
         
         continue_on_fail = scenario.get("continue_on_failure", False) if continue_on_failure is None else continue_on_failure
 

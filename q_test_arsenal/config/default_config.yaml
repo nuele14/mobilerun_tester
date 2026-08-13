@@ -1,5 +1,5 @@
 # ===============================================================================
-# Q - TEST ARSENAL - CONFIGURAZIONE UNIFICATA, PROVIDER VLM E CREDENZIALI
+# Q - TEST ARSENAL - CONFIGURAZIONE INFRASTRUTTURA E API KEYS PROVIDER VLM
 # ===============================================================================
 
 # 1. Provider VLM Attivo (Modificato automaticamente da --select-model o manualmente)
@@ -34,15 +34,10 @@ runner:
   default_max_retries: 3
   debug_screenshots_dir: "reports/screenshots"
   reports_dir: "reports"
+  check_missing_env_vars: true                                  # Controllo preventivo a priori: avvisa ed interrompe se mancano variabili in env.yaml
 
-# 5. Credenziali dell'Applicazione & Chiavi API Provider Cloud (Unificate!)
+# 5. Chiavi API Provider Cloud VLM (Vision Capable Models)
 credentials:
-  USER_EMAIL: "test_user@example.com"
-  USER_PASSWORD: "secure_password_123"
-  API_URL: "api.example.com"
-  SHOP_CODE: "demo"
-
-  # API Keys Provider Cloud VLM (Vision Capable Models)
   OPENAI_API_KEY: ""
   GEMINI_API_KEY: ""
   OPENROUTER_API_KEY: ""

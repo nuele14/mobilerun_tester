@@ -135,6 +135,8 @@ def ExecuteCommandLineInterface():
                 scenario_files.extend(sorted(s_dir.glob("*.yaml")))
                 scenario_files.extend(sorted(s_dir.glob("*.yml")))
 
+        scenario_files = [f for f in scenario_files if f.name not in ("env.yaml", "env_example.yaml") and not f.name.startswith("env_")]
+
         if not scenario_files:
             console.print("[bold yellow]⚠️ Nessun file .yaml o .yml trovato nella cartella 'scenarios/'.[/bold yellow]")
             sys.exit(0)

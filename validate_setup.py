@@ -99,6 +99,7 @@ def check_config_and_scenarios() -> Tuple[bool, Dict[str, Any]]:
     scenarios_dir = Path("scenarios")
     if scenarios_dir.exists():
         scenario_files = list(scenarios_dir.glob("*.yaml")) + list(scenarios_dir.glob("*.yml"))
+        scenario_files = [sf for sf in scenario_files if sf.name not in ("env.yaml", "env_example.yaml") and not sf.name.startswith("env_")]
         if scenario_files:
             print(f" ✓ Trovati {len(scenario_files)} scenari di test nella cartella 'scenarios/':")
             for sf in scenario_files:

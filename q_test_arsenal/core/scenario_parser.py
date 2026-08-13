@@ -110,17 +110,66 @@ class ScenarioParser:
         return res
 
     @staticmethod
-    def ResolveEnvironmentVariables(steps: List[Dict[str, Any]], config: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def LoadEnvironmentFile(env_path: str = "scenarios/env.yaml") -> Dict[str, Any]:
+        """[Function] Loads test environment variables from scenarios/env.yaml."""
+        p = Path(env_path)
+        if not p.exists():
+            return {}
+        return ScenarioParser.LoadYamlDocument(str(p))
+
+    @staticmethod
+    def ExtractReferencedVariables(steps: List[Dict[str, Any]]) -> List[str]:
+        """[Function] Finds all unique ${VAR_NAME} placeholders referenced in scenario steps."""
+        import re
+        vars_found = set()
+
+        def _scan(obj: Any):
+            if isinstance(obj, str):
+                for match in re.findall(r"\$\{([^}]+)\}", obj):
+                    vars_found.add(match)
+            elif isinstance(obj, dict):
+                for v in obj.values():
+                    _scan(v)
+            elif isinstance(obj, list):
+                for item in obj:
+                    _scan(item)
+
+        for step in steps:
+            _scan(step)
+        return sorted(list(vars_found))
+
+    @staticmethod
+    def ValidateScenarioEnvironmentVariables(steps: List[Dict[str, Any]], config: Dict[str, Any] = None, env_path: str = "scenarios/env.yaml") -> List[str]:
+        """[Function] Returns list of missing variable names not found in scenarios/env.yaml, config credentials, or os.environ."""
+        referenced = ScenarioParser.ExtractReferencedVariables(steps)
+        if not referenced:
+            return []
+
+        env_vars = ScenarioParser.LoadEnvironmentFile(env_path)
+        credentials = (config or {}).get("credentials", {})
+
+        missing = []
+        for var_name in referenced:
+            if var_name not in env_vars and var_name not in credentials and var_name not in os.environ:
+                missing.append(var_name)
+
+        return missing
+
+    @staticmethod
+    def ResolveEnvironmentVariables(steps: List[Dict[str, Any]], config: Dict[str, Any] = None, env_path: str = "scenarios/env.yaml") -> List[Dict[str, Any]]:
         """
-        [Function] Replaces ${VAR_NAME} placeholders using unified config credentials first,
-        falling back to process environment variables (os.environ).
+        [Function] Replaces ${VAR_NAME} placeholders checking scenarios/env.yaml first,
+        falling back to config credentials, and finally process environment variables (os.environ).
         """
+        env_vars = ScenarioParser.LoadEnvironmentFile(env_path)
         credentials = (config or {}).get("credentials", {})
         res = []
 
         def _resolve_val(v: Any) -> Any:
             if isinstance(v, str) and v.startswith("${") and v.endswith("}"):
                 var_name = v[2:-1]
+                if var_name in env_vars:
+                    return str(env_vars[var_name])
                 if var_name in credentials:
                     return str(credentials[var_name])
                 return os.getenv(var_name, v)

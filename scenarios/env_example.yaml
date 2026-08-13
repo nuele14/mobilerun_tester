@@ -1,0 +1,8 @@
+# ===============================================================================
+# Q - TEST ARSENAL - ENVIRONMENT DATA TEMPLATE EXAMPLE
+# ===============================================================================
+
+API_URL: "api.example.com"
+SHOP_CODE: "demo"
+USER_EMAIL: "your_test_user@example.com"
+USER_PASSWORD: "your_test_password"

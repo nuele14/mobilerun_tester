@@ -4,7 +4,7 @@
 
 # 🚀 Q - Test Arsenal
 
-**Q - Test Arsenal** è un framework autonomo di testing automatizzato E2E visivo per applicazioni mobile (**Flutter & Native Android**), basato su modelli Vision-Language (**VLM**) eseguiti completamente in locale.
+**Q - Test Arsenal** è un framework autonomo di testing automatizzato E2E visivo per applicazioni mobile (**Flutter & Native Android**), basato su modelli Vision-Language (**VLM**) eseguiti sia completamente in locale (via `llama-server`) che tramite Provider Cloud (OpenAI, Gemini, OpenRouter, Groq).
 
 Il sistema esegue un grounding visivo a due livelli (**Coarse + Fine Bounding Box Zoom Crop**) ed interagisce direttamente con il dispositivo Android via ADB, senza dipendere da servizi cloud esterni o ID di elemento hardcodati nel codice.
 
@@ -22,16 +22,20 @@ Nei romanzi e nei film ideati da **Ian Fleming**, **Q** è l'iconico *Quartermas
 
 ## 📋 Indice
 1. [Componenti di Sistema Richiesti](#-componenti-di-sistema-richiesti)
-2. [Modelli VLM Consigliati](#-modelli-vlm-consigliati)
-3. [Setup dell'Ambiente e Dipendenze](#-setup-dellambiente-e-dipendenze)
-4. [Validazione Automatica dell'Ambiente](#-validazione-automatica-dellambiente)
-5. [Dove Impostare la Configurazione](#-dove-impostare-la-configurazione)
-6. [Dove Inserire e Creare gli Scenari di Test](#-dove-inserire-e-creare-gli-scenari-di-test)
-7. [Suite Manifest & Gestione Errori](#-suite-manifest--gestione-errori-continue_on_failure)
-8. [Esecuzione dei Test (CLI `q-test`)](#-esecuzione-dei-test-cli-q-test)
-9. [Telemetria, Root Cause Debugging e Report HTML](#-telemetria-root-cause-debugging-e-report-html)
-10. [Riconoscimenti e Crediti](#-riconoscimenti-e-crediti)
-11. [Licenza](#-licenza)
+2. [Modelli VLM Locali e Scansione Automatica](#-modelli-vlm-locali-e-scansione-automatica)
+3. [Provider VLM Cloud e Locali Supportati](#-provider-vlm-cloud-e-locali-supportati)
+4. [Quick Setup Guidato (`setup_wizard.py` / `q-setup`)](#-quick-setup-guidato-in-2-comandi)
+5. [Validazione Automatica dell'Ambiente (`validate_setup.py`)](#-validazione-automatica-dellambiente)
+6. [Configurazione del Framework (`default_config.yaml`)](#-configurazione-del-framework)
+7. [Dati dell'Applicazione e Credenziali (`scenarios/env.yaml`)](#-dati-dellapplicazione-e-credenziali-scenariosenvyaml)
+8. [Controllo Preventivo a Priori delle Variabili (Pre-flight Check)](#-controllo-preventivo-a-priori-delle-variabili-pre-flight-check)
+9. [Selezione Interattiva Modello (`--select-model` / `-m`)](#-selezione-interattiva-modello---select-model--m)
+10. [Creazione degli Scenari di Test YAML](#-creazione-degli-scenari-di-test-yaml)
+11. [Suite Manifest & Gestione Errori](#-suite-manifest--gestione-errori-continue_on_failure)
+12. [Esecuzione dei Test (CLI `q-test`)](#-esecuzione-dei-test-cli-q-test)
+13. [Telemetria, Root Cause Debugging e Report HTML](#-telemetria-root-cause-debugging-e-report-html)
+14. [Riconoscimenti e Crediti](#-riconoscimenti-e-crediti)
+15. [Licenza](#-licenza)
 
 ---
 
@@ -57,8 +61,8 @@ Richiesto per comunicare con dispositivi fisici o emulatori Android.
   scoop install adb
   ```
 
-### 2. llama.cpp (`llama-server`)
-Richiesto per eseguire l'inferenza locale multimodale dei modelli VLM con accelerazione GPU.
+### 2. llama.cpp (`llama-server`) *(Facoltativo per esecuzione locale)*
+Richiesto se desideri eseguire l'inferenza locale multimodale dei modelli VLM con accelerazione GPU senza usare API Cloud.
 
 * **macOS (con accelerazione Metal GPU)**:
   ```bash
@@ -69,20 +73,35 @@ Richiesto per eseguire l'inferenza locale multimodale dei modelli VLM con accele
 
 ---
 
-## 🧠 Modelli VLM Consigliati
+## 🧠 Modelli VLM Locali e Scansione Automatica
 
-Per garantire la massima precisione nell'individuazione visiva dei bottoni e campi di testo (Grounding), si consiglia l'uso dei seguenti modelli multimodali in formato GGUF:
+Il framework include uno **scanner automatico della cartella modelli** ([`server.models_dir`](q_test_arsenal/config/default_config.yaml)) con un **algoritmo dinamico di matching dei token** (`_ExtractTokens`) che rileva tutti i modelli `.gguf` e li accoppia automaticamente al rispettivo proiettore multimodale `mmproj`.
 
-| Tipo | Modello Consigliato | Descrizione |
+| Modello VLM (GGUF) | Proiettore Multimodale (mmproj) | Descrizione |
 | :--- | :--- | :--- |
-| **Modello VLM (GGUF)** | `UI-TARS-7B-DPO-Q4_K_M.gguf` | Modello specializzato per il grounding di interfacce GUI e mobile. |
-| **Proiettore Multimodale (mmproj)** | `mmproj-UI-TARS-7B-f16.gguf` | Proiettore di visione associato al modello UI-TARS. |
-| **Alternativa VLM** | `Qwen2-VL-7B-Instruct-Q4_K_M.gguf` | Modello generico per Vision-Language di alta qualità. |
+| `UI-TARS-7B-DPO-Q4_K_M.gguf` | `mmproj-UI-TARS-7B-f16.gguf` | Specializzato per il grounding di interfacce GUI e mobile. |
+| `Muse-Glimmer-30B-Q4_1.gguf` | `mmproj-Muse-Glimmer-30B-f16.gguf` | VLM avanzato ad alta capacità visiva per interfacce complesse. |
+| `Qwen2.5-7B-Instruct-Q4_K_L.gguf` | `Qwen2.5-VL-7B-Instruct.mmproj.gguf` | Modello generico Vision-Language di alta qualità. |
 
 ### 📁 Dove Posizionare i Modelli
-Si consiglia di creare una cartella dedicata nella directory home utente, ad esempio:
-* **macOS / Linux**: `~/.modelli_llm/` (es: `/Users/nomeutente/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf`)
+Imposta il percorso della cartella modelli in `default_config.yaml` (`server.models_dir`):
+* **macOS / Linux**: `~/.modelli_llm/`
 * **Windows**: `C:\modelli_llm\`
+
+*Nota: Lo scanner filtra ed esclude automaticamente gli LLM solo-testo che non possiedono un proiettore visuale `.mmproj` accoppiato.*
+
+---
+
+## ☁️ Provider VLM Cloud e Locali Supportati
+
+**Q - Test Arsenal** supporta sia modelli locali che i principali Provider Cloud VLM con supporto per le API OpenAI Vision:
+
+1. **Local llama-server** (Inference locale via `llama-server` con GPU Metal/CUDA/Vulkan).
+2. **OpenAI Cloud Vision** (`gpt-4o-mini`, `gpt-4o`, `gpt-4-turbo`).
+3. **Google Gemini Cloud Vision** (`gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash-exp`).
+4. **OpenRouter Multi-Model Cloud** (`qwen/qwen-2-vl-7b-instruct`, `google/gemini-flash-1.5`, `anthropic/claude-3.5-sonnet`).
+5. **Groq Fast Vision Cloud** (`llama-3.2-11b-vision-preview`, `llama-3.2-90b-vision-preview`).
+6. **Ollama Local Vision** (`qwen2-vl`, `llava`, `minicpm-v`).
 
 ---
 
@@ -91,10 +110,10 @@ Si consiglia di creare una cartella dedicata nella directory home utente, ad ese
 Il progetto include uno script di wizard interattivo che configura l'intero ambiente in modo guidato:
 
 ```bash
-# Launch the interactive setup wizard:
-python3 setup_wizard.py
+# Avvia il wizard di setup interattivo:
+python3 setup_wizard.py  # Oppure il comando CLI: q-setup
 
-# Activate the virtual environment:
+# Attiva l'ambiente virtuale:
 source .venv/bin/activate
 ```
 
@@ -104,100 +123,121 @@ source .venv/bin/activate
 3. **Installa le dipendenze Python ed il pacchetto `q-test-arsenal`** in modalità editable (`pip install -e .`).
 4. **Verifica gli strumenti di sistema (`adb` e `llama-server`)** guidando l'installazione via Homebrew/System.
 5. **Scarica i modelli VLM consigliati (UI-TARS 7B GGUF + mmproj)** in `~/.modelli_llm/` con barra di avanzamento in tempo reale e ripresa download.
-6. **Configura interattivamente il file di setup unificato** [`q_test_arsenal/config/default_config.yaml`](q_test_arsenal/config/default_config.yaml) chiedendo credenziali e serial ADB.
+6. **Configura interattivamente il file di setup unificato** [`q_test_arsenal/config/default_config.yaml`](q_test_arsenal/config/default_config.yaml) ed il file credenziali [`scenarios/env.yaml`](scenarios/env.yaml).
 7. **Esegue la validazione diagnostica finale** ([`validate_setup.py`](validate_setup.py)).
-
----
-
-## 📦 Setup Manuale dell'Ambiente e Dipendenze
-
-### 1. Creazione del Virtual Environment
-Crea ed attiva un ambiente virtuale Python (versione Python $\ge 3.11$):
-
-```bash
-# Su macOS / Linux:
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Su Windows (PowerShell):
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-### 2. Installazione del Pacchetto e Dipendenze Python
-Installa le dipendenze Python ed il pacchetto in modalità editable:
-
-```bash
-pip install -e .
-```
-*(Oppure installa direttamente le dipendenze via `pip install -r requirements.txt`).*
 
 ---
 
 ## 🔍 Validazione Automatica dell'Ambiente
 
-Questo progetto include uno script di diagnostica completo ([`validate_setup.py`](validate_setup.py)) che controlla se tutti i componenti di sistema, l'ambiente Python, l'eseguibile `llama-server`, la connessione ADB ed i file `.gguf` dei modelli sono pronti all'uso:
+Questo progetto include uno script di diagnostica completo ([`validate_setup.py`](validate_setup.py)) che controlla se tutti i componenti di sistema, l'ambiente Python, l'eseguibile `llama-server`, la connessione ADB ed i file dei modelli sono pronti all'uso:
 
 ```bash
 python validate_setup.py
 ```
 
-### Controlli effettuati da `validate_setup.py`:
-1. **Dipendenze Python**: `PyYAML`, `Pillow`, `ImageHash`, `Rich`, `HTTPX`.
-2. **Moduli Interni Framework**: `q_test_arsenal.core`, `runner`, `cli`.
-3. **ADB & Dispositivi**: Presenza del comando `adb` e presenza di uno smartphone/emulatore Android connesso.
-4. **VLM Engine**: Presenza dell'eseguibile `llama-server` e relativo stato health.
-5. **Modelli VLM**: Verifica esistenza su disco dei file `.gguf` del modello e dell'mmproj configurati.
-6. **Scenari**: Presenza di file `.yaml` validi nella cartella `scenarios/`.
-
 ---
 
-## ⚙️ Dove Impostare la Configurazione
+## ⚙️ Configurazione del Framework
 
-La configurazione globale di **Q - Test Arsenal** si trova in:
+La configurazione globale di infrastruttura del framework si trova in:
 👉 **[`q_test_arsenal/config/default_config.yaml`](q_test_arsenal/config/default_config.yaml)**
 
-### Parametri Principali
-
 ```yaml
+provider:
+  type: "local"                                                 # local | openai | gemini | openrouter | groq | ollama
+  model_name: "UI-TARS-7B-DPO-Q4_K_M.gguf"
+  api_url: "http://127.0.0.1:8080/v1/chat/completions"
+
 server:
+  models_dir: "~/.modelli_llm"                                  # Cartella dei modelli locali .gguf (Obbligatoria per llama-server)
   host: "127.0.0.1"
   port: 8080
-  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"       # Percorso al modello GGUF
-  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"      # Percorso al proiettore mmproj
-  binary: "llama-server"                                        # Nome o percorso all'eseguibile
+  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"
+  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"
+  binary: "llama-server"
   context_size: 4096
-  gpu_layers: 99                                                # Layer da caricare su GPU (-ngl 99)
+  gpu_layers: 99
   threads: 8
-  flash_attn: true                                              # Flash Attention (-fa on)
-  auto_start: true                                              # Avvia il server automaticamente se non attivo
+  flash_attn: true
+  auto_start: true
 
 device:
-  serial: ""                                                    # Serial ADB (se vuoto o non connesso, si avvia il menu interattivo)
-  show_touches: true                                            # Attiva l'indicatore bianco dei tocchi a schermo
+  serial: "R52M904J1QM"                                         # Serial ADB (se vuoto, avvia il menu interattivo)
+  show_touches: true
 
 runner:
   default_max_retries: 3
   debug_screenshots_dir: "reports/screenshots"
   reports_dir: "reports"
-```
+  check_missing_env_vars: true                                  # Controllo preventivo: avvisa se mancano variabili in env.yaml
 
-### 📱 Selezione Interattiva Dispositivo ADB & Autosalvataggio Preferenze
-Quando il framework viene avviato:
-1. Se il parametro `device.serial` nel file di configurazione è vuoto (`""`) oppure il dispositivo salvato **non è attualmente connesso** via USB/ADB:
-   - Il sistema scansiona i dispositivi Android ed emulatori collegati.
-   - Viene mostrato un **menu di selezione interattivo** da terminale.
-2. Una volta selezionato il dispositivo desiderato (es. `R52M904J1QM`), il suo serial viene **salvato automaticamente nelle preferenze** ([`q_test_arsenal/config/default_config.yaml`](q_test_arsenal/config/default_config.yaml)).
-3. Per le esecuzioni successive, il sistema utilizzerà direttamente il dispositivo salvato senza più richiedere l'intervento dell'utente!
+credentials:
+  OPENAI_API_KEY: ""
+  GEMINI_API_KEY: ""
+  OPENROUTER_API_KEY: ""
+  GROQ_API_KEY: ""
+```
 
 ---
 
-## 📂 Dove Inserire e Creare gli Scenari di Test
+## 🔑 Dati dell'Applicazione e Credenziali (`scenarios/env.yaml`)
+
+Per garantire massima flessibilità e pulizia, le utenze ed i parametri dell'applicazione di test sono disaccoppiati dalla configurazione del framework e risiedono nel singolo file:
+👉 **[`scenarios/env.yaml`](scenarios/env.yaml)**
+
+```yaml
+# scenarios/env.yaml
+API_URL: "api.example.com"
+SHOP_CODE: "demo"
+USER_EMAIL: "test_user@example.com"
+USER_PASSWORD: "secure_password_123"
+```
+
+Per testare con un'altra utenza o cambiare ambiente (es. Dev / Staging / Prod), ti basterà modificare o sostituire questo singolo file.
+
+---
+
+## 🛡️ Controllo Preventivo a Priori delle Variabili (Pre-flight Check)
+
+Prima di avviare qualsiasi tocco o digitazione sullo smartphone, il motore esegue un controllo di sicurezza a priori:
+1. Analizza gli step dello scenario ed estrae tutti i segnaposto `${VAR_NAME}`.
+2. Verifica che ogni variabile sia definita in `scenarios/env.yaml` o nell'ambiente di sistema (`os.environ`).
+3. Se individua variabili mancano (es. `${USER_PASSWORD}` dimenticata), interrompe il test e mostra un box di avviso chiedendo conferma prima di interagire col telefono:
+
+```text
+⚠️ VARIABILI DI AMBIENTE MANCANTI:
+Le seguenti variabili non sono state trovate in scenarios/env.yaml o nell'ambiente:
+  • ${SHOP_CODE}
+  • ${USER_PASSWORD}
+
+👉 Continuare comunque l'esecuzione dello scenario? [y/N]:
+```
+
+---
+
+## 🎯 Selezione Interattiva Modello (`--select-model` / `-m`)
+
+Per cambiare modello VLM locale o passare ad un provider cloud in qualsiasi momento:
+
+```bash
+q-test scenarios/login_flow.yaml --select-model
+# Oppure la scorciatoia breve:
+q-test -m
+```
+
+### Come funziona:
+1. Scansione automatica dei modelli GGUF in `server.models_dir` (`~/.modelli_llm/`).
+2. Elenco dei modelli locali con proiettore `mmproj` accoppiato e dei Provider Cloud pronti all'uso.
+3. Al primo avvio (se nessun modello è stato ancora scelto), il menu si apre automaticamente.
+4. La scelta viene salvata in `default_config.yaml` per le esecuzioni successive.
+
+---
+
+## 📂 Creazione degli Scenari di Test YAML
 
 Tutti gli scenari di test in formato YAML vanno inseriti nella cartella:
 👉 **[`scenarios/`](scenarios/)** (es: `scenarios/login_flow.yaml`)
-
-### Struttura di uno Scenario YAML
 
 ```yaml
 name: "Login Flow Scenario - Production Suite"
@@ -211,58 +251,50 @@ steps:
 
   - type: "type_text"
     target: "Campo di testo per l'URL API"
-    value: "api.example.com"
+    value: "${API_URL}"
 
   - type: "type_text"
     target: "Campo di testo per lo Shop Code"
-    value: "dev2"
+    value: "${SHOP_CODE}"
 
   - type: "action"
     target: "Pulsante 'Save' per salvare le impostazioni"
 
   - type: "type_text"
     target: "Area di testo per lo Username o Email"
-    value: "${USER_EMAIL}"                                      # Supporta variabili d'ambiente
+    value: "${USER_EMAIL}"
 
   - type: "type_text"
     target: "Area di testo per la Password"
     value: "${USER_PASSWORD}"
 
   - type: "wait"
-    seconds: 2                                                  # Pausa di attesa in secondi (per completamento animazioni)
+    seconds: 2
 
   - type: "action"
     target: "Pulsante azzurro con scritto 'Login'"
 
 assertion:
-  wait_seconds: 2                                               # Pausa prima di catturare lo screenshot finale dell'asserzione
+  wait_seconds: 2
   description: "La schermata di Login è scomparsa ed è visibile la schermata di caricamento/sincronizzazione o il carrello principale."
 ```
-
-### Tipi di Step Disponibili:
-* `action`: Grounding VLM + Tap singolo sull'elemento specificato in `target`.
-* `type_text`: Grounding VLM + Selezione + Pulizia automatica + Inserimento del testo specificato in `value`.
-* `action_until`: Ripete il tap fino a quando la condizione `until_condition` non risulta vera.
-* `long_press_until`: Esegue la pressione prolungata (Long Press) fino al soddisfacimento di `until_condition`.
-* `wait`: Pausa di attesa in secondi (`seconds: N`) per consentire il completamento di transizioni UI o animazioni.
-* `include_scenario`: Include ed esegue i passi di un altro scenario YAML (`scenario: "scenarios/login_flow.yaml"`).
 
 ---
 
 ## 🏆 Suite Manifest & Gestione Errori (`continue_on_failure`)
 
 ### 1. Scenari che contengono altri Scenari
-Puoi creare un file YAML di Suite (es: `scenarios/master_suite.yaml`) per ordinare ed eseguire in sequenza precisa varie suite di test dell'applicazione, specificando per ciascuna le preferenze delle macro ed il comportamento in caso di errore:
+Puoi creare un file YAML di Suite (es: `scenarios/master_suite.yaml`) per ordinare ed eseguire in sequenza varie suite di test:
 
 ```yaml
 name: "E2E Complete Test Suite"
 description: "Suite principale che ordina ed esegue in sequenza la configurazione, il login ed il checkout"
-continue_on_failure: true                        # Prosegue con i test successivi anche se uno scenario fallisce
+continue_on_failure: true
 
 scenarios:
   - file: "scenarios/login_flow.yaml"
     use_macro: true
-    continue_on_failure: false                    # Se il login fallisce, ferma l'esecuzione della suite
+    continue_on_failure: false
 
   - file: "scenarios/checkout_flow.yaml"
     use_macro: false
@@ -273,19 +305,11 @@ Per eseguire l'intera suite ordinata dal manifest:
 q-test scenarios/master_suite.yaml
 ```
 
-### 2. Controllo del Flusso di Errore (`continue_on_failure`)
-Puoi configurare se arrestare l'esecuzione oppure continuare anche se uno step o un'asserzione visiva fallisce:
-* **Nei Manifest o Scenari YAML**: Impostando `continue_on_failure: true` nel file YAML.
-* **Da Comando CLI**: Aggiungendo la flag `--continue-on-failure`:
-  ```bash
-  q-test scenarios/login_flow.yaml --continue-on-failure
-  ```
-
 ---
 
 ## 🏃 Esecuzione dei Test (CLI `q-test`)
 
-Il framework fornisce il pratico comando CLI **`q-test`** (ed in alternativa `python -m q_test_arsenal.cli.main`):
+Il framework fornisce il pratico comando CLI **`q-test`**:
 
 ### 1. Esecuzione Batch (Tutti gli scenari in `scenarios/`)
 ```bash
@@ -298,19 +322,14 @@ q-test scenarios/login_flow.yaml
 ```
 
 ### 3. ⚡ Registrazione ed Esecuzione Ibrida con Macro (`--save-macro` e `--use-macro`)
-Per registrare i tocchi e velocizzare l'esecuzione saltando le chiamate VLM quando la schermata è invariata:
-
 * **Registrazione ed esportazione Macro JSON**:
   ```bash
   q-test scenarios/login_flow.yaml --save-macro
   ```
-  Salva la sequenza delle azioni, coordinate percentuali ed hash visivi in `scenarios/macros/login_flow.macro.json`.
-
-* **Esecuzione Ibrida (Fast-Path + Fallback VLM)**:
+* **Esecuzione Ibrida (Fast-Path ~100ms + Fallback VLM)**:
   ```bash
   q-test scenarios/login_flow.yaml --use-macro
   ```
-  Confronta lo schermo attuale con l'hash salvato: se la schermata coincide ($\ge 85\%$), esegue il tocco in **~100ms** senza impegnare il VLM; se lo schermo differisce, passa automaticamente la palla all'IA visiva (**VLM 2-Pass Zoom Crop**).
 
 ---
 
@@ -318,20 +337,9 @@ Per registrare i tocchi e velocizzare l'esecuzione saltando le chiamate VLM quan
 
 Dopo l'esecuzione di un test, il framework genera automaticamente:
 
-1. **Dashboard Master & Report Singoli Interattivi**:
-   * Salvati nella cartella `reports/` (es: `reports/login_flow_report.html` e `reports/master_report.html`).
-   * **Navigazione 1-Click**: La Master Dashboard contiene i pulsanti diretti (`📄 Apri Report Dettagliato →`) verso ciascun sotto-report, e ogni report singolo include un link di ritorno (`← Torna alla Master Dashboard`).
-   * **Screenshot dell'Asserzione Visiva Finale**: Evidenzia l'immagine ed il testo dell'esito dell'asserzione finale visiva (`final_assertion_<scenario>.png`).
-
-2. **Telemetria delle Latenze & KPI Performance**:
-   * Per ogni step vengono misurati con precisione al millisecondo: `📷 Screencap`, `🧠 VLM Pass 1 (Coarse)`, `🔎 VLM Pass 2 (Zoom Crop Fine)`, `⚡ ADB Input`.
-   * Le KPI medie di latenza VLM ed ADB vengono calcolate e sintetizzate nelle card in cima ai report HTML.
-
-3. **🔍 Root Cause Debug Analysis per Step Falliti**:
-   * Se uno step o tocco fallisce, il report HTML genera una card speciale di debug in stile dark-magenta contenente la risposta JSON raw del VLM, le coordinate tentate, le note di retry ed il ritaglio zoom sull'area bersaglio.
-
-4. **File di Log Dettagliati**:
-   * Salvati in `logs/run_YYYYMMDD_HHMMSS.log` (automaticamente ignorati da git), contenenti tutte le chiamate ADB, risposte JSON dei modelli e stack trace per il debugging.
+1. **Dashboard Master & Report Singoli Interattivi**: Salvati nella cartella `reports/` (es: `reports/login_flow_report.html` e `reports/master_report.html`) con navigazione 1-click tra la Master Dashboard ed i report singoli.
+2. **Telemetria delle Latenze & KPI Performance**: Misurazione al millisecondo per `Screencap`, `VLM Pass 1 (Coarse)`, `VLM Pass 2 (Zoom Crop Fine)`, `ADB Input`.
+3. **🔍 Root Cause Debug Analysis per Step Falliti**: Genera una card speciale di debug con la risposta JSON raw del VLM, le coordinate tentate, le note di retry ed il ritaglio zoom sull'area bersaglio.
 
 ---
 
@@ -341,7 +349,7 @@ Questo progetto nasce ed è stato sviluppato come evoluzione ed estensione di **
 
 ### 💡 Il contributo di `mobilerun` a questo progetto:
 * **Infrastruttura Agenti & Tooling Mobile**: `mobilerun` fornisce l'architettura di base per l'interazione con i dispositivi (ADB/iOS), il supporto multimodale per i provider LLM/VLM ed il sistema di macro/telemetria.
-* **Q - Test Arsenal**: Sviluppato in autonomia da **Emanuele Coltro**, estende l'infrastruttura originale trasformandola in un framework autonomo di testing E2E visivo basato su scenari YAML, motore di grounding a due livelli (**2-Pass Zoom Crop**), report HTML interattivi con telemetria avanzata, Fast-Path Macro ed il comando CLI `q-test`.
+* **Q - Test Arsenal**: Sviluppato in autonomia da **Emanuele Coltro**, estende l'infrastruttura originale trasformandola in un framework autonomo di testing E2E visivo basato su scenari YAML, motore di grounding a due livelli (**2-Pass Zoom Crop**), report HTML interattivi con telemetria avanzata, Fast-Path Macro, disaccoppiamento credenziali `scenarios/env.yaml`, pre-flight variable check ed il comando CLI `q-test`.
 
 Un sentito ringraziamento a Niels Schmidt e al team di DroidRun per lo straordinario lavoro svolto nel progetto originale.
 

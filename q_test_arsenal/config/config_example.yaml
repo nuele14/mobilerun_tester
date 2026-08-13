@@ -28,13 +28,9 @@ runner:
   default_max_retries: 3
   debug_screenshots_dir: "reports/screenshots"
   reports_dir: "reports"
+  check_missing_env_vars: true
 
 credentials:
-  USER_EMAIL: "your_user@example.com"
-  USER_PASSWORD: "your_secret_password"
-  API_URL: "api.example.com"
-  SHOP_CODE: "demo"
-
   OPENAI_API_KEY: "sk-your-openai-api-key"
   GEMINI_API_KEY: "AIzaSy-your-gemini-api-key"
   OPENROUTER_API_KEY: "sk-or-your-openrouter-api-key"
