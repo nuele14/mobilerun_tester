@@ -111,9 +111,9 @@ def ExecuteCommandLineInterface():
 
     config_path = Path(args.config)
 
-    # Interactive Model Selection Menu ONLY if --select-model flag is explicitly passed
-    if args.select_model:
-        from q_test_arsenal.core.provider_manager import ProviderManager
+    from q_test_arsenal.core.provider_manager import ProviderManager
+    # Interactive Model Selection Menu if --select-model flag is passed OR if model is unselected/missing
+    if args.select_model or ProviderManager.NeedsModelSelection(str(config_path)):
         ProviderManager.InteractiveSelectVisionModel(str(config_path))
 
     logger = GetLogger()

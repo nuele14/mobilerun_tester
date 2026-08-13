@@ -13,7 +13,7 @@ device:
   show_touches: true
 provider:
   api_url: http://127.0.0.1:8080/v1/chat/completions
-  model_name: UI-TARS-7B-DPO.Q4_K_M.gguf
+  model_name: UI-TARS-7B-DPO-Q4_K_M.gguf
   type: local
 runner:
   debug_screenshots_dir: reports/screenshots
@@ -29,6 +29,7 @@ server:
   host: 127.0.0.1
   mmproj_path: ~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf
   model_path: ~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf
+  models_dir: ~/.modelli_llm
   port: 8080
   startup_timeout_seconds: 60
   threads: 8

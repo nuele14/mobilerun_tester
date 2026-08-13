@@ -4,14 +4,15 @@
 
 provider:
   type: "local"                                                 # local | openai | gemini | openrouter | groq | ollama
-  model_name: "UI-TARS-7B-DPO.Q4_K_M.gguf"
+  model_name: "UI-TARS-7B-DPO-Q4_K_M.gguf"
   api_url: "http://127.0.0.1:8080/v1/chat/completions"
 
 server:
+  models_dir: "~/.modelli_llm"                                  # Local GGUF models directory path (Required for local llama-server)
   host: "127.0.0.1"
   port: 8080
-  model_path: "~/.modelli_llm/UI-TARS-7B-DPO.Q4_K_M.gguf"
-  mmproj_path: "~/.modelli_llm/UI-TARS-7B-DPO.mmproj-fp16.gguf"
+  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"
+  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"
   binary: "llama-server"
   context_size: 4096
   gpu_layers: 99
@@ -32,7 +33,7 @@ credentials:
   USER_EMAIL: "your_user@example.com"
   USER_PASSWORD: "your_secret_password"
   API_URL: "api.example.com"
-  SHOP_CODE: "dev2"
+  SHOP_CODE: "demo"
 
   OPENAI_API_KEY: "sk-your-openai-api-key"
   GEMINI_API_KEY: "AIzaSy-your-gemini-api-key"
