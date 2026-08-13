@@ -1,9 +1,8 @@
 [project]
-name = "mobilerun"
-version = "0.6.15"
-description = "A framework for controlling mobile devices through LLM agents"
+name = "q-test-arsenal"
+version = "1.0.0"
+description = "Q - Test Arsenal - Vision-Driven Automated Mobile Testing Framework"
 authors = [
-    { name = "Niels Schmidt", email = "niels@droidrun.ai" },
     { name = "Emanuele Coltro" }
 ]
 dependencies = [
@@ -83,10 +82,9 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["mobilerun", "q_test_arsenal"]
+packages = ["q_test_arsenal"]
 
 [project.scripts]
-mobilerun = "mobilerun.cli.main:cli"
 q-test = "q_test_arsenal.cli.main:main"
 q-arsenal = "q_test_arsenal.cli.main:main"
 

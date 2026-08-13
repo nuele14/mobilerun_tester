@@ -1,8 +1,14 @@
+# ===============================================================================
+# Q - TEST ARSENAL - CONFIGURAZIONE UNIFICATA E CREDENZIALI DI TEST
+# ===============================================================================
+
+# 1. Configurazione Engine Server Local VLM (llama-server)
 server:
-  host: 127.0.0.1
+  host: "127.0.0.1"
   port: 8080
-  model_path: ~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf
-  mmproj_path: ~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf
+  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"
+  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"
+  binary: "llama-server"
   context_size: 4096
   gpu_layers: 99
   threads: 8
@@ -10,10 +16,21 @@ server:
   cache_reuse: 256
   auto_start: true
   startup_timeout_seconds: 60
+
+# 2. Configurazione Dispositivo Android ADB
 device:
-  serial: R52M904J1QM
-  show_touches: true
+  serial: "R52M904J1QM"                                         # Serial ADB (se vuoto o non connesso, si avvia il menu interattivo)
+  show_touches: true                                            # Attiva l'indicatore visivo bianco dei tocchi a schermo
+
+# 3. Configurazione Esecuzione Runner & Report HTML
 runner:
   default_max_retries: 3
-  debug_screenshots_dir: reports/screenshots
-  reports_dir: reports
+  debug_screenshots_dir: "reports/screenshots"
+  reports_dir: "reports"
+
+# 4. Credenziali e Variabili di Test dell'Applicazione (Posto Unico di Setup)
+credentials:
+  USER_EMAIL: "test_user@example.com"
+  USER_PASSWORD: "secure_password_123"
+  API_URL: "betacc.planetps.it"
+  SHOP_CODE: "dev2"

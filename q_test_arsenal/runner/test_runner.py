@@ -24,7 +24,7 @@ class TestRunner:
     def ExecuteTestScenario(self, scenario_path: str, save_macro: bool = False, use_macro: bool = False, continue_on_failure: Optional[bool] = None) -> Dict[str, Any]:
         """[Function] Runs complete scenario step loop returning telemetry dictionary."""
         logger = GetLogger()
-        scenario = ScenarioParser.LoadTestScenario(scenario_path)
+        scenario = ScenarioParser.LoadTestScenario(scenario_path, config=self.config)
         scenario_name = scenario.get("name", "Unknown Scenario")
         
         continue_on_fail = scenario.get("continue_on_failure", False) if continue_on_failure is None else continue_on_failure

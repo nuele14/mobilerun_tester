@@ -71,7 +71,7 @@ class ScenarioParser:
         }
 
     @staticmethod
-    def LoadTestScenario(scenario_path: str) -> Dict[str, Any]:
+    def LoadTestScenario(scenario_path: str, config: Dict[str, Any] = None) -> Dict[str, Any]:
         """[Function] Loads scenario YAML enforcing 'steps' block presence and expanding included sub-scenarios."""
         p = Path(scenario_path)
         if not p.exists():
@@ -80,13 +80,13 @@ class ScenarioParser:
         if not isinstance(d, dict) or "steps" not in d:
             raise ValueError(f"Invalid scenario in {scenario_path}: missing 'steps' block.")
         
-        expanded_steps = ScenarioParser.ExpandIncludedScenarioSteps(d["steps"], base_dir=p.parent)
-        d["steps"] = ScenarioParser.ResolveEnvironmentVariables(expanded_steps)
+        expanded_steps = ScenarioParser.ExpandIncludedScenarioSteps(d["steps"], base_dir=p.parent, config=config)
+        d["steps"] = ScenarioParser.ResolveEnvironmentVariables(expanded_steps, config=config)
         d["continue_on_failure"] = bool(d.get("continue_on_failure", False))
         return d
 
     @staticmethod
-    def ExpandIncludedScenarioSteps(steps: List[Dict[str, Any]], base_dir: Path) -> List[Dict[str, Any]]:
+    def ExpandIncludedScenarioSteps(steps: List[Dict[str, Any]], base_dir: Path, config: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """[Function] Recursively expands steps with type 'include_scenario' or 'run_scenario'."""
         res = []
         for step in steps:
@@ -101,7 +101,7 @@ class ScenarioParser:
                             resolved_path = candidate
 
                     if resolved_path.exists():
-                        sub_data = ScenarioParser.LoadTestScenario(str(resolved_path))
+                        sub_data = ScenarioParser.LoadTestScenario(str(resolved_path), config=config)
                         res.extend(sub_data.get("steps", []))
                     else:
                         res.append(step)
@@ -110,13 +110,26 @@ class ScenarioParser:
         return res
 
     @staticmethod
-    def ResolveEnvironmentVariables(steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """[Function] Replaces ${VAR_NAME} placeholders with OS environment values."""
+    def ResolveEnvironmentVariables(steps: List[Dict[str, Any]], config: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """
+        [Function] Replaces ${VAR_NAME} placeholders using unified config credentials first,
+        falling back to process environment variables (os.environ).
+        """
+        credentials = (config or {}).get("credentials", {})
         res = []
+
+        def _resolve_val(v: Any) -> Any:
+            if isinstance(v, str) and v.startswith("${") and v.endswith("}"):
+                var_name = v[2:-1]
+                if var_name in credentials:
+                    return str(credentials[var_name])
+                return os.getenv(var_name, v)
+            return v
+
         for step in steps:
             s = step.copy()
-            if isinstance(s.get("value"), str) and s["value"].startswith("${") and s["value"].endswith("}"):
-                s["value"] = os.getenv(s["value"][2:-1], s["value"])
+            for key, val in s.items():
+                s[key] = _resolve_val(val)
             res.append(s)
         return res
 
@@ -126,5 +139,5 @@ class ScenarioParser:
         return ScenarioParser.LoadConfigurationFile(config_path)
 
     @staticmethod
-    def load_scenario(scenario_path: str) -> Dict[str, Any]:
-        return ScenarioParser.LoadTestScenario(scenario_path)
+    def load_scenario(scenario_path: str, config: Dict[str, Any] = None) -> Dict[str, Any]:
+        return ScenarioParser.LoadTestScenario(scenario_path, config=config)

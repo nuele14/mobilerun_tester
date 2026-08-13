@@ -1,0 +1,30 @@
+# ===============================================================================
+# Q - TEST ARSENAL - CONFIG EXAMPLE TEMPLATE
+# ===============================================================================
+
+server:
+  host: "127.0.0.1"
+  port: 8080
+  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"
+  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"
+  binary: "llama-server"
+  context_size: 4096
+  gpu_layers: 99
+  threads: 8
+  flash_attn: true
+  auto_start: true
+
+device:
+  serial: ""                                                    # Leave empty to trigger interactive ADB device selection
+  show_touches: true
+
+runner:
+  default_max_retries: 3
+  debug_screenshots_dir: "reports/screenshots"
+  reports_dir: "reports"
+
+credentials:
+  USER_EMAIL: "your_user@example.com"
+  USER_PASSWORD: "your_secret_password"
+  API_URL: "betacc.planetps.it"
+  SHOP_CODE: "dev2"
