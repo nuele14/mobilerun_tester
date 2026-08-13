@@ -87,6 +87,7 @@ packages = ["q_test_arsenal"]
 [project.scripts]
 q-test = "q_test_arsenal.cli.main:main"
 q-arsenal = "q_test_arsenal.cli.main:main"
+q-setup = "setup_wizard:main"
 
 [tool.ruff]
 line-length = 100

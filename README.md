@@ -86,7 +86,30 @@ Si consiglia di creare una cartella dedicata nella directory home utente, ad ese
 
 ---
 
-## 📦 Setup dell'Ambiente e Dipendenze
+## ⚡ Quick Setup Guidato (In 2 Comandi)
+
+Il progetto include uno script di wizard interattivo che configura l'intero ambiente in modo guidato:
+
+```bash
+# Launch the interactive setup wizard:
+python3 setup_wizard.py
+
+# Activate the virtual environment:
+source .venv/bin/activate
+```
+
+### 🧙‍♂️ Cosa fa automaticamente `setup_wizard.py`:
+1. **Verifica versione Python ed Architettura CPU** (macOS Apple Silicon / Intel, Linux, Windows).
+2. **Crea l'ambiente virtuale `.venv`** se non già presente.
+3. **Installa le dipendenze Python ed il pacchetto `q-test-arsenal`** in modalità editable (`pip install -e .`).
+4. **Verifica gli strumenti di sistema (`adb` e `llama-server`)** guidando l'installazione via Homebrew/System.
+5. **Scarica i modelli VLM consigliati (UI-TARS 7B GGUF + mmproj)** in `~/.modelli_llm/` con barra di avanzamento in tempo reale e ripresa download.
+6. **Configura interattivamente il file di setup unificato** [`q_test_arsenal/config/default_config.yaml`](q_test_arsenal/config/default_config.yaml) chiedendo credenziali e serial ADB.
+7. **Esegue la validazione diagnostica finale** ([`validate_setup.py`](validate_setup.py)).
+
+---
+
+## 📦 Setup Manuale dell'Ambiente e Dipendenze
 
 ### 1. Creazione del Virtual Environment
 Crea ed attiva un ambiente virtuale Python (versione Python $\ge 3.11$):
