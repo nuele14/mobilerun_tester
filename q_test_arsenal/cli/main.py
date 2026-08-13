@@ -84,6 +84,12 @@ def ExecuteCommandLineInterface():
         help="Abilita l'esecutore ibrido Macro Fast-Path con fallback automatico al VLM"
     )
     parser.add_argument(
+        "--select-model",
+        "-m",
+        action="store_true",
+        help="Apre il menu interattivo per la selezione del modello e provider VLM (Local o Cloud)"
+    )
+    parser.add_argument(
         "--continue-on-failure",
         action="store_true",
         help="Prosegue con gli step o sotto-scenari successivi anche se uno step o asserzione fallisce"
@@ -103,10 +109,16 @@ def ExecuteCommandLineInterface():
         console.print("[dim]------------------------------------------------------------[/dim]\n")
         sys.exit(0)
 
+    config_path = Path(args.config)
+
+    # Interactive Model Selection Menu ONLY if --select-model flag is explicitly passed
+    if args.select_model:
+        from q_test_arsenal.core.provider_manager import ProviderManager
+        ProviderManager.InteractiveSelectVisionModel(str(config_path))
+
     logger = GetLogger()
     logger.info("Initializing Q - Test Arsenal CLI")
 
-    config_path = Path(args.config)
     config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
     runner = TestRunner(config, config_path=str(config_path))
 

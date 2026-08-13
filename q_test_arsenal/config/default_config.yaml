@@ -1,19 +1,34 @@
-server:
-  host: 127.0.0.1
-  port: 8080
-  model_path: ~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf
-  mmproj_path: ~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf
-  context_size: 4096
-  gpu_layers: 99
-  threads: 8
-  flash_attn: true
-  cache_reuse: 256
-  auto_start: true
-  startup_timeout_seconds: 60
+credentials:
+  ANTHROPIC_API_KEY: ''
+  API_URL: api.example.com
+  GEMINI_API_KEY: ''
+  GROQ_API_KEY: ''
+  OPENAI_API_KEY: ''
+  OPENROUTER_API_KEY: ''
+  SHOP_CODE: demo
+  USER_EMAIL: test_user@example.com
+  USER_PASSWORD: secure_password_123
 device:
   serial: R52M904J1QM
   show_touches: true
+provider:
+  api_url: http://127.0.0.1:8080/v1/chat/completions
+  model_name: UI-TARS-7B-DPO.Q4_K_M.gguf
+  type: local
 runner:
-  default_max_retries: 3
   debug_screenshots_dir: reports/screenshots
+  default_max_retries: 3
   reports_dir: reports
+server:
+  auto_start: true
+  binary: llama-server
+  cache_reuse: 256
+  context_size: 4096
+  flash_attn: true
+  gpu_layers: 99
+  host: 127.0.0.1
+  mmproj_path: ~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf
+  model_path: ~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf
+  port: 8080
+  startup_timeout_seconds: 60
+  threads: 8

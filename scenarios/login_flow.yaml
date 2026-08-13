@@ -9,22 +9,22 @@ steps:
 
   - type: "type_text"
     target: "Campo di testo per l'URL API (o 'url API') nel dialogo delle impostazioni"
-    value: "betacc.planetps.it"
+    value: "${API_URL}"
 
   - type: "type_text"
     target: "Campo di testo per lo Shop Code (o 'shop code') nel dialogo delle impostazioni"
-    value: "dev2"
+    value: "${SHOP_CODE}"
 
   - type: "action"
     target: "Pulsante 'Save' per salvare le impostazioni nel dialogo"
 
   - type: "type_text"
     target: "Area di testo per lo Username o Email"
-    value: "andrea@plansol.it"
+    value: "${USER_EMAIL}"
 
   - type: "type_text"
     target: "Area di testo per la Password"
-    value: "samsung4"
+    value: "${USER_PASSWORD}"
 
   - type: "action"
     target: "Pulsante azzurro con scritto 'Login'"

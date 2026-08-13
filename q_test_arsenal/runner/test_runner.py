@@ -42,13 +42,22 @@ class TestRunner:
             else:
                 console.print("⚠️ [bold yellow]Macro non trovata:[/bold yellow] Esecuzione completa VLM in corso.")
 
-        with StatusSpinner("🦙 Inizializzazione server Llama VLM..."):
-            if not self.server_mgr.StartLlamaServer():
-                logger.error("Failed to start VLM server.")
-                raise RuntimeError("Failed to start VLM server.")
+        from q_test_arsenal.core.provider_manager import ProviderManager
+        provider_config = ProviderManager.GetProviderConfig(self.config)
+
+        if provider_config.get("is_local", True):
+            with StatusSpinner(f"🦙 Inizializzazione server Llama VLM locale ({provider_config['model_name']})..."):
+                if not self.server_mgr.StartLlamaServer():
+                    logger.error("Failed to start local VLM server.")
+                    raise RuntimeError("Failed to start local VLM server.")
+        else:
+            console.print(
+                f"☁️ [bold cyan]Esecuzione tramite Provider Cloud VLM:[/bold cyan] "
+                f"[bold white]{provider_config['name']}[/bold white] ([bold yellow]{provider_config['model_name']}[/bold yellow])"
+            )
 
         adb = ADBDevice(serial=self.config.get("device", {}).get("serial", ""), config_path=self.config_path)
-        vision = VisionEngine(self.server_mgr.base_url)
+        vision = VisionEngine(provider_config)
 
         start_t = time.time()
         step_results: List[Dict[str, Any]] = []
