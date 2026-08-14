@@ -6,7 +6,7 @@ This module converts test execution telemetry payloads into standalone HTML repo
 Key Design Requirements:
 1. Zero External Dependencies: Reports use self-contained CSS tokens and inline SVG/images
    so reports render offline without CDN dependencies.
-2. High Visual Quality: Dark mode palette, KPI summary cards, pass/fail status badges,
+2. High Visual Quality: Executive dark palette, KPI summary cards, pass/fail status badges,
    and screenshot overlays with red touch target highlights.
 3. Master Suite Reports: Aggregates multi-scenario batch runs into a single dashboard overview.
 
@@ -57,15 +57,15 @@ class ReportGenerator:
             shot = step.get("tapped_screenshot") or step.get("screenshot") or ""
             rel_shot = os.path.relpath(shot, out_file.parent) if shot and os.path.exists(shot) else ""
             
-            img_html = f'<a href="{rel_shot}" target="_blank"><img src="{rel_shot}" class="step-img" alt="Step Screenshot"></a>' if rel_shot else '<div class="no-img">No Image</div>'
+            img_html = f'<a href="{rel_shot}" target="_blank"><img src="{rel_shot}" class="step-img" alt="Step Screenshot"></a>' if rel_shot else '<div class="no-img">No Image Available</div>'
 
             telem = step.get("telemetry", {})
             telem_html = f"""
             <div class="telemetry-bar">
-                <span class="telemetry-pill">📷 ADB Cap: <b>{telem.get('screencap_ms', 0)}ms</b></span>
-                <span class="telemetry-pill">🧠 VLM Pass 1: <b>{telem.get('vlm_pass1_ms', 0)}ms</b></span>
-                <span class="telemetry-pill">🔎 VLM Pass 2 (Zoom): <b>{telem.get('vlm_pass2_ms', 0)}ms</b></span>
-                <span class="telemetry-pill">⚡ ADB Input: <b>{telem.get('adb_input_ms', 0)}ms</b></span>
+                <span class="telemetry-pill">ADB Capture: <b>{telem.get('screencap_ms', 0)}ms</b></span>
+                <span class="telemetry-pill">VLM Coarse: <b>{telem.get('vlm_pass1_ms', 0)}ms</b></span>
+                <span class="telemetry-pill">VLM Zoom Fine: <b>{telem.get('vlm_pass2_ms', 0)}ms</b></span>
+                <span class="telemetry-pill">ADB Action: <b>{telem.get('adb_input_ms', 0)}ms</b></span>
             </div>
             """ if telem else ""
 
@@ -77,14 +77,14 @@ class ReportGenerator:
                     raw_resp = att.get("raw_response", "")
                     crop_shot = att.get("zoom_crop_screenshot", "")
                     rel_crop = os.path.relpath(crop_shot, out_file.parent) if crop_shot and os.path.exists(crop_shot) else ""
-                    crop_img_tag = f'<div style="margin-top:8px;"><strong>Zoom Crop Impact Target:</strong><br><img src="{rel_crop}" class="crop-thumb"></div>' if rel_crop else ''
+                    crop_img_tag = f'<div style="margin-top:8px;"><strong>Zoom Crop Target Area:</strong><br><img src="{rel_crop}" class="crop-thumb"></div>' if rel_crop else ''
 
                     attempts_html += f"""
                     <div class="attempt-box">
-                        <div><strong>Tentativo {att.get('attempt')}:</strong> Target: ({att.get('final_x', 0):.1f}%, {att.get('final_y', 0):.1f}%)</div>
-                        {f'<div style="color:#f87171;"><strong>Motivo Fallimento:</strong> {att.get("assertion_reason")}</div>' if att.get("assertion_reason") else ''}
+                        <div><strong>Attempt {att.get('attempt')}:</strong> Target: ({att.get('final_x', 0):.1f}%, {att.get('final_y', 0):.1f}%)</div>
+                        {f'<div style="color:#f87171;"><strong>Failure Cause:</strong> {att.get("assertion_reason")}</div>' if att.get("assertion_reason") else ''}
                         <div class="raw-response-box">
-                            <strong>Risposta Grezza VLM (Debug):</strong>
+                            <strong>Raw VLM Response (Debug Payload):</strong>
                             <pre><code>{raw_resp}</code></pre>
                         </div>
                         {crop_img_tag}
@@ -93,8 +93,8 @@ class ReportGenerator:
 
                 root_cause_html = f"""
                 <div class="root-cause-card">
-                    <h4>🔍 Root Cause Debug Analysis</h4>
-                    <p><strong>Dettaglio Diagnostico:</strong> {rc_trace.get('step_notes')}</p>
+                    <h4>Root Cause Diagnostic Analysis</h4>
+                    <p><strong>Diagnostic Detail:</strong> {rc_trace.get('step_notes')}</p>
                     {attempts_html}
                 </div>
                 """
@@ -106,7 +106,7 @@ class ReportGenerator:
                     <div>{step_badge} <span class="time">{step.get('duration_seconds')}s</span></div>
                 </div>
                 <p><strong>Target:</strong> <code>{step.get('target')}</code></p>
-                <p><strong>Note:</strong> {step.get('notes')}</p>
+                <p><strong>Notes:</strong> {step.get('notes')}</p>
                 {telem_html}
                 {root_cause_html}
                 <div class="img-container">
@@ -120,10 +120,10 @@ class ReportGenerator:
         final_badge = '<span class="step-badge pass">PASS</span>' if final_passed else '<span class="step-badge fail">FAIL</span>'
         final_shot = final_assertion.get("screenshot", "")
         rel_final_shot = os.path.relpath(final_shot, out_file.parent) if final_shot and os.path.exists(final_shot) else ""
-        final_img_html = f'<div class="img-container" style="margin-top:14px;"><strong>Screenshot Valutato dall\'Asserzione:</strong><br><a href="{rel_final_shot}" target="_blank"><img src="{rel_final_shot}" class="step-img" alt="Final Assertion Screenshot"></a></div>' if rel_final_shot else ''
+        final_img_html = f'<div class="img-container" style="margin-top:14px;"><strong>Final Assertion Target Screenshot:</strong><br><a href="{rel_final_shot}" target="_blank"><img src="{rel_final_shot}" class="step-img" alt="Final Assertion Screenshot"></a></div>' if rel_final_shot else ''
 
         html_content = f"""<!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -157,11 +157,11 @@ class ReportGenerator:
             justify-content: space-between;
             align-items: center;
         }}
-        h1 {{ margin: 0 0 8px 0; font-size: 26px; }}
+        h1 {{ margin: 0 0 8px 0; font-size: 26px; letter-spacing: -0.5px; }}
         .meta {{ color: var(--text-muted); font-size: 14px; }}
-        .badge {{ padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 16px; text-transform: uppercase; }}
-        .badge.pass {{ background: rgba(16, 185, 129, 0.2); color: var(--accent-pass); border: 1px solid var(--accent-pass); }}
-        .badge.fail {{ background: rgba(239, 68, 68, 0.2); color: var(--accent-fail); border: 1px solid var(--accent-fail); }}
+        .badge {{ padding: 8px 16px; border-radius: 9999px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }}
+        .badge.pass {{ background: rgba(16, 185, 129, 0.15); color: var(--accent-pass); border: 1px solid var(--accent-pass); }}
+        .badge.fail {{ background: rgba(239, 68, 68, 0.15); color: var(--accent-fail); border: 1px solid var(--accent-fail); }}
         
         .kpi-row {{
             display: grid;
@@ -186,7 +186,7 @@ class ReportGenerator:
         .step-card {{ background: var(--card-bg); border-radius: 12px; padding: 18px; margin-bottom: 16px; border: 1px solid #334155; }}
         .step-header {{ display: flex; justify-content: space-between; align-items: center; }}
         .step-header h3 {{ margin: 0; font-size: 18px; color: #38bdf8; }}
-        code {{ background: #090d16; padding: 2px 6px; border-radius: 4px; color: #f472b6; }}
+        code {{ background: #090d16; padding: 2px 6px; border-radius: 4px; color: #f472b6; font-family: monospace; }}
         
         .telemetry-bar {{ display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }}
         .telemetry-pill {{ background: #090d16; border: 1px solid #334155; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--text-muted); }}
@@ -216,11 +216,11 @@ class ReportGenerator:
 <body>
     <div class="container">
         <div class="nav-bar">
-            <a href="master_report.html" class="back-link">← Torna alla Master Dashboard</a>
+            <a href="master_report.html" class="back-link">&larr; Return to Master Dashboard</a>
         </div>
         <div class="header-card">
             <div>
-                <h1>📱 Q - Test Arsenal</h1>
+                <h1>Q - Test Arsenal</h1>
                 <div class="meta">Scenario: <strong>{summary.get('scenario_name')}</strong></div>
             </div>
             <div>{status_badge}</div>
@@ -228,25 +228,25 @@ class ReportGenerator:
 
         <div class="kpi-row">
             <div class="kpi-card">
-                <div class="meta">Durata Totale</div>
+                <div class="meta">Total Duration</div>
                 <div class="kpi-val">{summary.get('total_duration_seconds')}s</div>
             </div>
             <div class="kpi-card">
-                <div class="meta">Latenza Media VLM</div>
+                <div class="meta">Avg VLM Latency</div>
                 <div class="kpi-val">{avg_vlm}ms</div>
             </div>
             <div class="kpi-card">
-                <div class="meta">Latenza Media ADB</div>
+                <div class="meta">Avg ADB Latency</div>
                 <div class="kpi-val">{avg_adb}ms</div>
             </div>
         </div>
 
-        <h2>📋 Dettaglio Esecuzione Step</h2>
+        <h2>Step Execution Breakdown</h2>
         {steps_html}
 
         <div class="assertion-card {'fail' if not final_passed else ''}">
-            <h3>🔍 Asserzione Visiva Finale: {final_badge}</h3>
-            <p><strong>Esito:</strong> {final_assertion.get('reason')}</p>
+            <h3>Final Visual Assertion: {final_badge}</h3>
+            <p><strong>Result:</strong> {final_assertion.get('reason')}</p>
             {final_img_html}
         </div>
     </div>
@@ -257,7 +257,7 @@ class ReportGenerator:
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html_content)
 
-        print(f"📊 [Q - Test Arsenal Report] Report HTML generato con successo in: {out_file.resolve()}")
+        print(f"[Report Generator] HTML report generated successfully at: {out_file.resolve()}")
         return str(out_file.resolve())
 
     # =========================================================================
@@ -292,21 +292,21 @@ class ReportGenerator:
             <div class="scenario-row {'fail' if not s_passed else ''}">
                 <div>
                     <h3>{s.get('scenario_name')}</h3>
-                    <div class="meta">Steps: {steps_count} | Durata: {s.get('total_duration_seconds')}s</div>
+                    <div class="meta">Steps: {steps_count} | Duration: {s.get('total_duration_seconds')}s</div>
                 </div>
                 <div class="scenario-actions">
                     {s_badge}
-                    <a href="{report_file}" class="report-btn {'fail' if not s_passed else ''}">📄 Apri Report Dettagliato →</a>
+                    <a href="{report_file}" class="report-btn {'fail' if not s_passed else ''}">View Detailed Report &rarr;</a>
                 </div>
             </div>
             """
 
         html_content = f"""<!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q - Test Arsenal - Master Report</title>
+    <title>Q - Test Arsenal - Master Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
@@ -335,6 +335,8 @@ class ReportGenerator:
             margin-bottom: 24px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }}
+        h1 {{ margin: 0 0 4px 0; font-size: 26px; letter-spacing: -0.5px; }}
+        .meta {{ color: var(--text-muted); font-size: 14px; }}
         .kpi-container {{
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -352,9 +354,9 @@ class ReportGenerator:
         .kpi-val.pass {{ color: var(--accent-pass); }}
         .kpi-val.fail {{ color: var(--accent-fail); }}
         
-        .badge {{ padding: 8px 16px; border-radius: 9999px; font-weight: 700; text-transform: uppercase; }}
-        .badge.pass {{ background: rgba(16, 185, 129, 0.2); color: var(--accent-pass); border: 1px solid var(--accent-pass); }}
-        .badge.fail {{ background: rgba(239, 68, 68, 0.2); color: var(--accent-fail); border: 1px solid var(--accent-fail); }}
+        .badge {{ padding: 8px 16px; border-radius: 9999px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }}
+        .badge.pass {{ background: rgba(16, 185, 129, 0.15); color: var(--accent-pass); border: 1px solid var(--accent-pass); }}
+        .badge.fail {{ background: rgba(239, 68, 68, 0.15); color: var(--accent-fail); border: 1px solid var(--accent-fail); }}
         
         .step-badge {{ padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }}
         .step-badge.pass {{ background: var(--accent-pass); color: #000; }}
@@ -374,7 +376,6 @@ class ReportGenerator:
         .scenario-row:hover {{ border-color: #38bdf8; }}
         .scenario-row.fail {{ border-left: 4px solid var(--accent-fail); }}
         .scenario-row h3 {{ margin: 0 0 4px 0; font-size: 18px; color: #38bdf8; }}
-        .meta {{ color: var(--text-muted); font-size: 13px; }}
 
         .scenario-actions {{ display: flex; align-items: center; gap: 14px; }}
         .report-btn {{
@@ -400,28 +401,28 @@ class ReportGenerator:
     <div class="container">
         <div class="header-card">
             <div>
-                <h1>🏆 Q - Test Arsenal Master Report</h1>
-                <div class="meta">Riepilogo Esecuzione Batch Scenari</div>
+                <h1>Q - Test Arsenal Executive Dashboard</h1>
+                <div class="meta">Batch Test Suite Execution Summary</div>
             </div>
             <div>{master_badge}</div>
         </div>
 
         <div class="kpi-container">
             <div class="kpi-card">
-                <div class="meta">Totale Scenari</div>
+                <div class="meta">Total Scenarios</div>
                 <div class="kpi-val">{total_scenarios}</div>
             </div>
             <div class="kpi-card">
-                <div class="meta">Passati / Falliti</div>
+                <div class="meta">Passed / Failed</div>
                 <div class="kpi-val pass">{passed_scenarios} <span style="font-size:16px; color:#94a3b8;">/</span> <span class="fail">{failed_scenarios}</span></div>
             </div>
             <div class="kpi-card">
-                <div class="meta">Tempo Totale</div>
+                <div class="meta">Total Duration</div>
                 <div class="kpi-val">{total_duration}s</div>
             </div>
         </div>
 
-        <h2>📂 Scenari Eseguiti ({total_scenarios})</h2>
+        <h2>Executed Scenarios ({total_scenarios})</h2>
         {cards_html}
     </div>
 </body>
@@ -431,7 +432,7 @@ class ReportGenerator:
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html_content)
 
-        print(f"🏆 [Master Suite Report] Dashboard di riepilogo generata in: {out_file.resolve()}")
+        print(f"[Report Generator] Master suite dashboard generated at: {out_file.resolve()}")
         return str(out_file.resolve())
 
     # Legacy Aliases

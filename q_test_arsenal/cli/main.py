@@ -97,8 +97,6 @@ def ExecuteCommandLineInterface():
 
     args = parser.parse_args()
 
-    if args.version:
-        console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
     config_path = Path(args.config)
     config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
 
@@ -109,11 +107,11 @@ def ExecuteCommandLineInterface():
         console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
         console.print(f"[bold white]{t('sys_info_header')}[/bold white]")
         console.print("[dim]------------------------------------------------------------[/dim]")
-        console.print(f"  • {t('ver_info', version=__version__, name=__version_name__)}")
-        console.print(f"  • {t('release_date', date=__release_date__)}")
-        console.print(f"  • {t('author', author=__author__)}")
-        console.print(f"  • {t('license', license=__license__)}")
-        console.print(f"  • {t('copyright', copyright=__copyright__)}")
+        console.print(t("ver_info", version=__version__, name=__version_name__))
+        console.print(t("release_date", date=__release_date__))
+        console.print(t("author", author=__author__))
+        console.print(t("license", license=__license__))
+        console.print(t("copyright", copyright=__copyright__))
         console.print("[dim]------------------------------------------------------------[/dim]\n")
         sys.exit(0)
 

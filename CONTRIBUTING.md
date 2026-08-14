@@ -1,113 +1,98 @@
-# Contributing to Mobilerun
+# Contributing to Q - Test Arsenal
 
-Thank you for your interest in contributing to Mobilerun! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to **Q - Test Arsenal**! This document provides guidelines and instructions for contributing to the project.
 
-## Getting Started
+---
 
-1. Fork the repository on GitHub
-2. Clone your fork:
+## 🚀 Getting Started
+
+1. **Fork the repository** on GitHub.
+2. **Clone your fork**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/mobilerun.git
-   cd mobilerun
+   git clone https://github.com/YOUR_USERNAME/q-test-arsenal.git
+   cd q-test-arsenal
    ```
-3. Set up your development environment as described below
-
-## Development Setup
-
-1. Create and activate a virtual environment:
+3. **Set up your development environment** using our 2-command interactive setup wizard:
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   python3 setup_wizard.py
+   source .venv/bin/activate
    ```
 
-2. Install development dependencies:
+---
+
+## ⚡ Development & Diagnostic Setup
+
+1. **Manual Virtual Environment Setup** (if not using `setup_wizard.py`):
    ```bash
-   pip install -e ".[dev]"
+   python3 -m venv .venv
+   source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
    ```
 
-## Making Contributions
+2. **Install package in editable mode with development dependencies**:
+   ```bash
+   pip install -e .
+   ```
 
-1. Create a new branch for your feature:
+3. **Run automated environment validation**:
+   ```bash
+   python validate_setup.py
+   ```
+
+---
+
+## 🛠️ Making Contributions
+
+1. **Create a new branch for your feature**:
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
-2. Make your changes following our coding standards:
+2. **Follow coding and quality standards**:
    - Use type hints for Python functions
    - Follow PEP 8 style guidelines
-   - Write descriptive commit messages
-   - Update documentation as needed
+   - Write clear, descriptive commit messages
+   - Maintain documentation and docstrings in English
+   - Keep application test credentials inside `scenarios/env.yaml` (never commit sensitive keys or real passwords)
 
-3. Commit your changes:
+3. **Commit your changes**:
    ```bash
    git add .
    git commit -m "feat: add your feature description"
    ```
 
-4. Push to your fork:
+4. **Push to your fork**:
    ```bash
    git push origin feature/your-feature-name
    ```
 
-5. Open a Pull Request
+5. **Open a Pull Request** on GitHub.
 
-## Documentation
+---
 
-- Update the README.md if you change functionality
-- Add docstrings to new functions and classes
-- Update the documentation in the `docs/` directory
+## 🔒 Security & Code Quality Checks
 
-## Community
+Before submitting a Pull Request, run security and static analysis checks:
 
-- Join our [Discord server](https://discord.gg/ZZbKEZZkwK) for discussions
-- Follow us on [Twitter/X](https://x.com/mobilerun_ai)
-- Check our [Documentation](https://docs.mobilerun.ai)
-- Report bugs and request features through [GitHub Issues](https://github.com/droidrun/mobilerun/issues)
-
-## Security Checks
-
-To ensure the security of the codebase, we have integrated security checks using `bandit` and `safety`. These tools help identify potential security issues in the code and dependencies.
-
-### Running Security Checks
-
-Before submitting any code, please run the following security checks:
-
-1. **Bandit**: A tool to find common security issues in Python code.
+1. **Bandit** (Static Security Analysis):
    ```bash
-   bandit -r mobilerun
+   bandit -r q_test_arsenal
    ```
 
-2. **Safety**: A tool to check your installed dependencies for known security vulnerabilities.
+2. **Environment & Component Diagnostics**:
    ```bash
-   safety scan
+   python validate_setup.py
    ```
 
-## Pull Request Process
+---
 
-1. Update documentation for any modified functionality
-2. Update the changelog if applicable
-3. Get at least one code review from a maintainer
-4. Once approved, a maintainer will merge your PR
+## 📖 Documentation & Language Guidelines
 
-## Release Process
+- **Primary Language**: English is the official language for all codebase documentation, docstrings, commit messages, issues, and Pull Requests.
+- **CLI Localization**: Keep user-facing strings localized using `q_test_arsenal.core.i18n`.
+- **Updating Docs**: Update `README.md` whenever adding new features or changing CLI functionality.
 
-Releases are handled by the maintainers. Version numbers follow [Semantic Versioning](https://semver.org/).
+---
 
-## Questions?
+## 📄 License
 
-If you have questions about contributing:
-1. Check existing GitHub issues
-2. Ask in our Discord server
-3. Open a new GitHub issue for complex questions
-
-Thank you for contributing to Mobilerun! 🚀
-
-## Language
-
-English is the preferred language for all contributions, including:
-- Code comments
-- Documentation
-- Commit messages
-- Pull requests
-- Issue reports
-- Community discussions
+By contributing to **Q - Test Arsenal**, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
