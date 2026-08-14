@@ -1,45 +1,33 @@
-# ===============================================================================
-# Q - TEST ARSENAL - CONFIGURAZIONE INFRASTRUTTURA E API KEYS PROVIDER VLM
-# ===============================================================================
-
-# 1. Provider VLM Attivo (Modificato automaticamente da --select-model o manualmente)
-provider:
-  type: "local"                                                 # local | openai | gemini | openrouter | groq | ollama
-  model_name: "UI-TARS-7B-DPO-Q4_K_M.gguf"
-  api_url: "http://127.0.0.1:8080/v1/chat/completions"
-
-# 2. Configurazione Engine Server Local VLM (llama-server)
-server:
-  models_dir: "~/.modelli_llm"                                  # Cartella dei modelli locali .gguf (Obbligatoria per llama-server)
-  host: "127.0.0.1"
-  port: 8080
-  model_path: "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf"
-  mmproj_path: "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf"
-  binary: "llama-server"
-  context_size: 4096
-  gpu_layers: 99
-  threads: 8
-  flash_attn: true
-  cache_reuse: 256
-  auto_start: true
-  startup_timeout_seconds: 60
-
-# 3. Configurazione Dispositivo Android ADB
-device:
-  serial: "R52M904J1QM"                                         # Serial ADB (se vuoto, avvia il menu interattivo)
-  show_touches: true
-
-# 4. Configurazione Esecuzione Runner & Report HTML
-runner:
-  default_max_retries: 3
-  debug_screenshots_dir: "reports/screenshots"
-  reports_dir: "reports"
-  check_missing_env_vars: true                                  # Controllo preventivo a priori: avvisa ed interrompe se mancano variabili in env.yaml
-
-# 5. Chiavi API Provider Cloud VLM (Vision Capable Models)
 credentials:
-  OPENAI_API_KEY: ""
-  GEMINI_API_KEY: ""
-  OPENROUTER_API_KEY: ""
-  GROQ_API_KEY: ""
-  ANTHROPIC_API_KEY: ""
+  ANTHROPIC_API_KEY: ''
+  GEMINI_API_KEY: ''
+  GROQ_API_KEY: ''
+  OPENAI_API_KEY: ''
+  OPENROUTER_API_KEY: ''
+device:
+  serial: R52M904J1QM
+  show_touches: true
+language: en
+provider:
+  api_url: http://127.0.0.1:8080/v1/chat/completions
+  model_name: UI-TARS-7B-DPO-Q4_K_M.gguf
+  type: local
+runner:
+  check_missing_env_vars: true
+  debug_screenshots_dir: reports/screenshots
+  default_max_retries: 3
+  reports_dir: reports
+server:
+  auto_start: true
+  binary: llama-server
+  cache_reuse: 256
+  context_size: 4096
+  flash_attn: true
+  gpu_layers: 99
+  host: 127.0.0.1
+  mmproj_path: ~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf
+  model_path: ~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf
+  models_dir: ~/.modelli_llm
+  port: 8080
+  startup_timeout_seconds: 60
+  threads: 8

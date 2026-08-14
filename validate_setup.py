@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
-VALIDATORE COMPLETO DELL'AMBIENTE DI SVILUPPO E RUNTIME PER Q - TEST ARSENAL
+Q - TEST ARSENAL ENVIRONMENT & RUNTIME DIAGNOSTIC VALIDATOR
 ===============================================================================
-Verifica:
-1. Dipendenze Python (PyYAML, Pillow, ImageHash, Rich, httpx).
-2. Moduli interni del framework.
-3. File di configurazione globale e scenari di test YAML.
-4. Strumenti di sistema: ADB e dispositivi Android connessi.
-5. Engine VLM: eseguibile llama-server e stato del server.
-6. File dei modelli LLM/VLM (.gguf e mmproj.gguf).
+Verifies:
+1. Python Dependencies (PyYAML, Pillow, ImageHash, Rich, httpx).
+2. Internal Framework Modules.
+3. Global Configuration File & YAML Test Scenarios.
+4. System Tools: ADB & Connected Android Devices.
+5. VLM Engine: llama-server executable & server health.
+6. Local LLM/VLM Model Files (.gguf and mmproj.gguf).
 ===============================================================================
 """
 
@@ -18,18 +18,34 @@ import sys
 import shutil
 import subprocess
 import urllib.request
+import yaml
 from pathlib import Path
 from typing import Tuple, Dict, Any
+
+from q_test_arsenal.core.i18n import I18n, t
+
+
+def load_language_config() -> str:
+    """Reads language setting from default_config.yaml."""
+    cfg_path = Path("q_test_arsenal/config/default_config.yaml")
+    if cfg_path.exists():
+        try:
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                d = yaml.safe_load(f) or {}
+                return d.get("language", "en")
+        except Exception:
+            pass
+    return "en"
 
 
 def print_header(title: str):
     print("\n" + "=" * 60)
-    print(f" 🔍 {title}")
+    print(f" {title}")
     print("=" * 60)
 
 
 def check_python_packages() -> bool:
-    print_header("1. VERIFICA DIPENDENZE PYTHON")
+    print_header(t("sec_deps"))
     all_ok = True
 
     packages = [
@@ -43,16 +59,18 @@ def check_python_packages() -> bool:
     for pkg_name, label in packages:
         try:
             __import__(pkg_name)
-            print(f" ✓ {label:<30} [INSTALLATO]")
+            status = t("installed")
+            print(f" ✓ {label:<30} [{status}]")
         except ImportError:
-            print(f" ❌ {label:<30} [MANCANTE] -> Installa con: pip install {pkg_name}")
+            status = t("not_installed")
+            print(f" ❌ {label:<30} [{status}] -> Install via: pip install {pkg_name}")
             all_ok = False
 
     return all_ok
 
 
 def check_project_modules() -> bool:
-    print_header("2. VERIFICA MODULI PROGETTO Q - TEST ARSENAL")
+    print_header(t("sec_modules"))
     all_ok = True
 
     modules = [
@@ -66,34 +84,34 @@ def check_project_modules() -> bool:
         ("q_test_arsenal.cli.main", "CLI Entrypoint"),
     ]
 
-    for mod_path, label in modules:
+    for mod_name, label in modules:
         try:
-            __import__(mod_path)
-            print(f" ✓ {label:<30} [OK]")
+            __import__(mod_name)
+            status = t("ok")
+            print(f" ✓ {label:<35} [{status}]")
         except Exception as e:
-            print(f" ❌ {label:<30} [ERRORE]: {e}")
+            print(f" ❌ {label:<35} [ERROR] -> {e}")
             all_ok = False
 
     return all_ok
 
 
 def check_config_and_scenarios() -> Tuple[bool, Dict[str, Any]]:
-    print_header("3. VERIFICA CONFIGURAZIONE E SCENARI")
+    print_header(t("sec_config"))
     all_ok = True
     config = {}
 
     config_path = Path("q_test_arsenal/config/default_config.yaml")
     if config_path.exists():
         try:
-            import yaml
             with open(config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
-            print(f" ✓ File di configurazione trovato: {config_path}")
+            print(t("config_found", path=str(config_path)))
         except Exception as e:
-            print(f" ❌ Errore lettura {config_path}: {e}")
+            print(f" ❌ Error reading {config_path}: {e}")
             all_ok = False
     else:
-        print(f" ❌ File di configurazione NON trovato: {config_path}")
+        print(f" ❌ Configuration file NOT found: {config_path}")
         all_ok = False
 
     scenarios_dir = Path("scenarios")
@@ -101,75 +119,75 @@ def check_config_and_scenarios() -> Tuple[bool, Dict[str, Any]]:
         scenario_files = list(scenarios_dir.glob("*.yaml")) + list(scenarios_dir.glob("*.yml"))
         scenario_files = [sf for sf in scenario_files if sf.name not in ("env.yaml", "env_example.yaml") and not sf.name.startswith("env_")]
         if scenario_files:
-            print(f" ✓ Trovati {len(scenario_files)} scenari di test nella cartella 'scenarios/':")
+            print(t("scenarios_found", count=len(scenario_files)))
             for sf in scenario_files:
                 print(f"   • {sf.name}")
         else:
-            print(" ⚠️ Nessun file .yaml trovato nella cartella 'scenarios/'.")
+            print(t("no_scenarios"))
     else:
-        print(" ⚠️ Cartella 'scenarios/' non trovata.")
+        print(" ⚠️ Folder 'scenarios/' not found.")
 
     return all_ok, config
 
 
 def check_adb_and_devices() -> bool:
-    print_header("4. VERIFICA STRUMENTI DI SISTEMA (ADB)")
+    print_header(t("sec_adb"))
     all_ok = True
 
-    adb_bin = shutil.which("adb")
-    if adb_bin:
-        print(f" ✓ ADB installato nel PATH: {adb_bin}")
-        try:
-            res = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, check=True)
-            lines = res.stdout.strip().split("\n")[1:]
-            devices = [l.split("\t")[0] for l in lines if "\tdevice" in l]
-            if devices:
-                print(f" ✓ Dispositivo/Emulatore Android connesso: {', '.join(devices)}")
-            else:
-                print(" ⚠️ Nessun dispositivo o emulatore Android attualmente connesso via ADB.")
-                print("   Assicurati che l'emulatore o lo smartphone sia collegato e che 'USB Debugging' sia attivo.")
-        except Exception as e:
-            print(f" ❌ Errore durante l'esecuzione di 'adb devices': {e}")
-            all_ok = False
+    adb_path = shutil.which("adb")
+    if adb_path:
+        print(t("adb_found", path=adb_path))
     else:
-        print(" ❌ ADB (Android Debug Bridge) NON trovato nel PATH del sistema!")
-        print("   Installa ADB:")
-        print("   • macOS:   brew install android-platform-tools")
-        print("   • Linux:   sudo apt install android-tools-adb")
-        print("   • Windows: winget install Google.PlatformTools  oppure  scoop install adb")
+        print(" ❌ Command 'adb' NOT found in system PATH!")
+        print("   Install Android Platform Tools (e.g. brew install android-platform-tools)")
+        return False
+
+    try:
+        res = subprocess.run([adb_path, "devices"], capture_output=True, text=True, check=True)
+        lines = [line.strip() for line in res.stdout.splitlines() if line.strip() and not line.startswith("List of devices")]
+        devices = [line.split()[0] for line in lines if "device" in line]
+
+        if devices:
+            for dev in devices:
+                print(t("device_connected", serial=dev))
+        else:
+            print(" ⚠️  No Android devices or emulators currently connected via ADB!")
+            print("   Connect a physical smartphone via USB (with USB Debugging ON) or start an emulator.")
+            all_ok = False
+    except Exception as e:
+        print(f" ❌ Error executing 'adb devices': {e}")
         all_ok = False
 
     return all_ok
 
 
 def check_vlm_engine_and_models(config: Dict[str, Any]) -> bool:
-    print_header("5. VERIFICA ENGINE VLM E MODELLI GGUF (llama-server)")
+    print_header(t("sec_vlm"))
     all_ok = True
 
     server_cfg = config.get("server", {})
     binary_name = server_cfg.get("binary", "llama-server")
-    server_bin = shutil.which(binary_name) or shutil.which("llama-server")
+    llama_path = shutil.which(binary_name) or shutil.which("llama-server")
 
-    if server_bin:
-        print(f" ✓ Eseguibile llama-server trovato: {server_bin}")
+    if llama_path:
+        print(t("llama_found", path=llama_path))
     else:
-        print(f" ⚠️ Eseguibile '{binary_name}' non trovato nel PATH di sistema.")
-        print("   Assicurati che llama.cpp sia installato (es. 'brew install llama.cpp' o scaricando i binari).")
+        print(f" ⚠️ Executable '{binary_name}' NOT found in system PATH!")
+        print("   Install llama.cpp (e.g. brew install llama.cpp) or specify the exact path in default_config.yaml.")
+        all_ok = False
 
-    # Controlla se il server è già attivo in ascolto su HTTP
     host = server_cfg.get("host", "127.0.0.1")
     port = server_cfg.get("port", 8080)
     health_url = f"http://{host}:{port}/health"
 
     try:
-        req = urllib.request.Request(health_url, method="GET")
+        req = urllib.request.Request(health_url)
         with urllib.request.urlopen(req, timeout=2) as resp:
             if resp.status == 200:
-                print(f" ✓ llama-server già ATTIVO ed in ascolto su {health_url}")
+                print(f" ✓ llama-server active and healthy on http://{host}:{port}")
     except Exception:
-        print(f" ℹ️ llama-server non è in ascolto su {health_url} (verrà avviato automaticamente al lancio del test).")
+        print(t("llama_not_listening"))
 
-    # Verification dei file modello .gguf e mmproj.gguf
     model_path_str = server_cfg.get("model_path", "~/.modelli_llm/UI-TARS-7B-DPO-Q4_K_M.gguf")
     mmproj_path_str = server_cfg.get("mmproj_path", "~/.modelli_llm/mmproj-UI-TARS-7B-f16.gguf")
 
@@ -178,28 +196,29 @@ def check_vlm_engine_and_models(config: Dict[str, Any]) -> bool:
 
     if model_path.exists():
         size_gb = round(model_path.stat().st_size / (1024 ** 3), 2)
-        print(f" ✓ Modello VLM trovato: {model_path} ({size_gb} GB)")
+        print(t("model_found", path=str(model_path), size=size_gb))
     else:
-        print(f" ❌ File Modello VLM NON trovato: {model_path}")
-        print(f"   Percorso configurato in default_config.yaml: '{model_path_str}'")
-        print("   Scarica il modello consigliato da HuggingFace:")
-        print("   • UI-TARS-7B (Q4_K_M): https://huggingface.co/bytedance-research/UI-TARS-7B-DPO-GGUF")
+        print(f" ❌ VLM Model NOT found: {model_path}")
+        print(f"   Configured path in default_config.yaml: '{model_path_str}'")
         all_ok = False
 
     if mmproj_path.exists():
         size_mb = round(mmproj_path.stat().st_size / (1024 ** 2), 2)
-        print(f" ✓ Proiettore Multimodale (mmproj) trovato: {mmproj_path} ({size_mb} MB)")
+        print(t("mmproj_found", path=str(mmproj_path), size=size_mb))
     else:
-        print(f" ❌ File mmproj NON trovato: {mmproj_path}")
-        print(f"   Percorso configurato in default_config.yaml: '{mmproj_path_str}'")
+        print(f" ❌ File mmproj NOT found: {mmproj_path}")
+        print(f"   Configured path in default_config.yaml: '{mmproj_path_str}'")
         all_ok = False
 
     return all_ok
 
 
 def main():
+    lang = load_language_config()
+    I18n.set_language(lang)
+
     print("=" * 60)
-    print(" 🚀 Q - TEST ARSENAL - VALIDAZIONE AMBIENTE E COMPONENTI")
+    print(f" {t('valid_title')}")
     print("=" * 60)
 
     p_ok = check_python_packages()
@@ -210,11 +229,11 @@ def main():
 
     print("\n" + "=" * 60)
     if p_ok and m_ok and c_ok and a_ok and v_ok:
-        print(" 🎉 VALIDAZIONE COMPLETATA CON SUCCESSO! L'ambiente è pronto all'uso.")
+        print(f" {t('validation_success')}")
         print("=" * 60)
         sys.exit(0)
     else:
-        print(" ❌ VALIDAZIONE FALLITA O INCOMPLETA - Verificare i punti sopra.")
+        print(f" {t('validation_failed')}")
         print("=" * 60)
         sys.exit(1)
 

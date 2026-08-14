@@ -2,6 +2,9 @@
 # Q - TEST ARSENAL - CONFIG EXAMPLE TEMPLATE WITH MULTI-PROVIDER SUPPORT
 # ===============================================================================
 
+# Language for CLI terminal output ("en" for English default, "it" for Italian)
+language: "en"
+
 provider:
   type: "local"                                                 # local | openai | gemini | openrouter | groq | ollama
   model_name: "UI-TARS-7B-DPO-Q4_K_M.gguf"

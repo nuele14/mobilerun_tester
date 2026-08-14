@@ -7,6 +7,7 @@ from q_test_arsenal.core.server_manager import LlamaServerManager
 from q_test_arsenal.core.scenario_parser import ScenarioParser
 from q_test_arsenal.core.macro_manager import MacroManager
 from q_test_arsenal.core.logger import GetLogger, GetLogFilePath, StatusSpinner, console
+from q_test_arsenal.core.i18n import I18n, t
 
 
 class TestRunner:
@@ -15,6 +16,7 @@ class TestRunner:
     def __init__(self, config: Dict[str, Any], config_path: str = "q_test_arsenal/config/default_config.yaml"):
         self.config = config
         self.config_path = config_path
+        I18n.set_language(config.get("language", "en"))
         self.server_mgr = LlamaServerManager(config)
         self.reports_dir = Path(config.get("runner", {}).get("reports_dir", "reports"))
         self.screenshots_dir = Path(config.get("runner", {}).get("debug_screenshots_dir", "reports/screenshots"))
@@ -24,6 +26,7 @@ class TestRunner:
     def ExecuteTestScenario(self, scenario_path: str, save_macro: bool = False, use_macro: bool = False, continue_on_failure: Optional[bool] = None) -> Dict[str, Any]:
         """[Function] Runs complete scenario step loop returning telemetry dictionary."""
         logger = GetLogger()
+        I18n.set_language(self.config.get("language", "en"))
         scenario = ScenarioParser.LoadTestScenario(scenario_path, config=self.config)
         scenario_name = scenario.get("name", "Unknown Scenario")
         steps = scenario.get("steps", [])
@@ -32,25 +35,25 @@ class TestRunner:
         if self.config.get("runner", {}).get("check_missing_env_vars", True):
             missing_vars = ScenarioParser.ValidateScenarioEnvironmentVariables(steps, config=self.config)
             if missing_vars:
-                console.print("\n[bold yellow]⚠️  VARIABILI DI AMBIENTE MANCANTI:[/bold yellow]")
-                console.print("[italic white]Le seguenti variabili non sono state trovate in scenarios/env.yaml o nell'ambiente:[/italic white]")
+                console.print(f"\n[bold yellow]{t('missing_vars_title')}[/bold yellow]")
+                console.print(f"[italic white]{t('missing_vars_sub')}[/italic white]")
                 for mv in missing_vars:
                     console.print(f"  • [bold red]${{{mv}}}[/bold red]")
                 
                 strict = self.config.get("runner", {}).get("strict_missing_env_vars", False)
                 if strict:
-                    console.print("❌ [bold red]Esecuzione interrotta per modalità strict_missing_env_vars.[/bold red]\n")
-                    raise ValueError(f"Variabili di ambiente mancanti: {', '.join(missing_vars)}")
+                    console.print(f"❌ [bold red]{t('strict_abort')}[/bold red]\n")
+                    raise ValueError(f"Missing environment variables: {', '.join(missing_vars)}")
                 
                 from rich.prompt import Confirm
-                if not Confirm.ask("\n👉 Continuare comunque l'esecuzione dello scenario?", default=False):
-                    console.print(" 🛑 [bold yellow]Esecuzione annullata dall'utente.[/bold yellow]\n")
+                if not Confirm.ask(f"{t('prompt_continue')}", default=False):
+                    console.print(f"{t('aborted_by_user')}\n")
                     sys.exit(0)
         
         continue_on_fail = scenario.get("continue_on_failure", False) if continue_on_failure is None else continue_on_failure
 
-        logger.info(f"Starting test scenario: '{scenario_name}' ({scenario_path}) [save_macro={save_macro}, use_macro={use_macro}, continue_on_failure={continue_on_fail}]")
-        console.print(f"\n📋 [bold yellow]Scenario:[/bold yellow] [bold white]{scenario_name}[/bold white]")
+        logger.info(t("starting_scenario", name=scenario_name, path=scenario_path))
+        console.print(f"\n📋 [bold yellow]{t('scenario_label')}[/bold yellow] [bold white]{scenario_name}[/bold white]")
 
         macro_mgr = MacroManager()
         loaded_macro = macro_mgr.LoadMacroSequence(scenario_path) if use_macro else None
@@ -58,9 +61,9 @@ class TestRunner:
 
         if use_macro:
             if loaded_macro:
-                console.print("⚡ [bold cyan]Esecuzione Ibrida Macro Attiva:[/bold cyan] Fast-path abilitato con fallback automatico a VLM.")
+                console.print(f"{t('macro_fastpath_active')}")
             else:
-                console.print("⚠️ [bold yellow]Macro non trovata:[/bold yellow] Esecuzione completa VLM in corso.")
+                console.print(f"{t('macro_not_found')}")
 
         from q_test_arsenal.core.provider_manager import ProviderManager
         provider_config = ProviderManager.GetProviderConfig(self.config)

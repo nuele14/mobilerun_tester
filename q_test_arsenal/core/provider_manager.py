@@ -6,6 +6,7 @@
 3. Supports models like Muse-Glimmer, UI-TARS, Qwen2.5-VL, LLaVA, MiniCPM, etc.
 4. Auto-prompts for selection if no model is configured or if `--select-model` is passed.
 5. Auto-saves selected provider & server paths to default_config.yaml.
+6. Fully localized via `q_test_arsenal.core.i18n`.
 ===============================================================================
 """
 
@@ -15,6 +16,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from q_test_arsenal.core.logger import GetLogger, console
+from q_test_arsenal.core.i18n import I18n, t
 
 # Supported VLM Providers Registry
 VLM_PROVIDERS = {
@@ -177,6 +179,7 @@ class ProviderManager:
     @staticmethod
     def GetProviderConfig(config: Dict[str, Any]) -> Dict[str, Any]:
         """[Function] Builds complete runtime provider configuration dictionary."""
+        I18n.set_language(config.get("language", "en"))
         p_cfg = config.get("provider", {})
         p_type = p_cfg.get("type", "local")
 
@@ -242,21 +245,21 @@ class ProviderManager:
             with open(p, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
 
+        I18n.set_language(config.get("language", "en"))
         current_prov_cfg = ProviderManager.GetProviderConfig(config)
         current_model = current_prov_cfg["model_name"]
         models_dir = config.get("server", {}).get("models_dir", "~/.modelli_llm")
 
         console.print("\n[bold cyan]============================================================[/bold cyan]")
-        console.print("[bold white]🎯 SELEZIONE INTERATTIVA MODELLO VISION (VLM)[/bold white]")
+        console.print(f"[bold white]{t('model_select_title')}[/bold white]")
         console.print("[bold cyan]============================================================[/bold cyan]")
 
         console.print(
-            "\n[bold yellow]👁️  ATTENZIONE:[/bold yellow] [italic white]Il modello selezionato DEVE supportare "
-            "funzionalità Multimodali / Vision (input di immagini) per eseguire il grounding visivo degli screenshot![/italic white]\n"
+            f"\n[bold yellow]{t('model_select_warn')}[/bold yellow]\n"
         )
 
         console.print(
-            f"📌 [bold green]Modello Attivo Attualmente:[/bold green] "
+            f"📌 [bold green]{t('active_model')}[/bold green] "
             f"[bold white]{current_prov_cfg['name']}[/bold white] -> [bold yellow]{current_model}[/bold yellow]\n"
         )
 
@@ -265,35 +268,32 @@ class ProviderManager:
         menu_items = []
 
         # Option 0: Keep current if valid
-        menu_items.append({"id": "0", "type": "keep", "label": f"Mantieni attivo ({current_prov_cfg['name']} - {current_model})"})
+        keep_label = t("keep_active", name=current_prov_cfg['name'], model=current_model)
+        menu_items.append({"id": "0", "type": "keep", "label": keep_label})
 
         idx = 1
         # Section 1: Discovered Local GGUF Models with Paired mmproj
         if local_ggufs:
-            console.print(f"[bold white]🦙 Modelli VLM Locali (.gguf + mmproj) trovati in '{models_dir}':[/bold white]")
+            console.print(f"[bold white]{t('local_models_found', dir=models_dir)}[/bold white]")
             for lm in local_ggufs:
-                label = f"Local GGUF: [bold yellow]{lm['filename']}[/bold yellow] ({lm['size_gb']:.2f} GB) [dim]-> proiettore: {lm['mmproj_filename']}[/dim]"
+                label = f"Local GGUF: [bold yellow]{lm['filename']}[/bold yellow] ({lm['size_gb']:.2f} GB) [dim]-> mmproj: {lm['mmproj_filename']}[/dim]"
                 menu_items.append({"id": str(idx), "type": "local_gguf", "data": lm, "label": label})
                 console.print(f"  [bold cyan][{idx}][/bold cyan] {label}")
                 idx += 1
             console.print("")
         else:
-            console.print(
-                f"[bold yellow]⚠️  Nessun modello VLM locale con proiettore .mmproj appaiato trovato in '{models_dir}'.[/bold yellow]"
-            )
-            console.print(
-                "[dim]   Nota: Per usare llama.cpp locale imposta 'server.models_dir' in default_config.yaml con i file .gguf e mmproj.[/dim]\n"
-            )
+            console.print(f"[bold yellow]{t('no_local_models', dir=models_dir)}[/bold yellow]")
+            console.print(f"[dim]{t('models_dir_note')}[/dim]\n")
 
         # Section 2: Cloud Providers
-        console.print("[bold white]☁️  Provider Cloud VLM & Local Daemon:[/bold white]")
+        console.print(f"[bold white]{t('cloud_providers')}[/bold white]")
         cloud_map = {}
         for p_id, p_info in VLM_PROVIDERS.items():
             if p_id == "local":
                 continue # Handled by local GGUF scan above
             key = ProviderManager.GetConfiguredApiKey(p_id, config)
             has_key = bool(key)
-            status_tag = "[bold green][PRONTO][/bold green]" if (p_info["is_local"] or has_key) else "[dim red][SERVE API KEY][/dim red]"
+            status_tag = f"[bold green]{t('tag_ready')}[/bold green]" if (p_info["is_local"] or has_key) else f"[dim red]{t('tag_key_required')}[/dim red]"
             label = f"{p_info['name']} {status_tag}"
             
             menu_items.append({"id": str(idx), "type": "provider", "provider_id": p_id, "label": label})
@@ -301,34 +301,34 @@ class ProviderManager:
             console.print(f"  [bold cyan][{idx}][/bold cyan] {label}")
             idx += 1
 
-        console.print("  [bold cyan][K][/bold cyan] Inserisci / Configura una nuova Chiave API Provider")
+        console.print(f"  [bold cyan][K][/bold cyan] {t('option_new_key')}")
 
-        user_choice = console.input("\n👉 Seleziona un'opzione [default=0]: ").strip().lower()
+        user_choice = console.input(f"\n{t('prompt_select_option')} ").strip().lower()
 
         if not user_choice or user_choice == "0":
-            console.print(" ✓ Mantenuta la configurazione attuale.\n")
+            console.print(f"{t('choice_kept')}\n")
             return current_prov_cfg
 
         if user_choice == "k":
-            console.print("\n[bold white]Configurazione Nuova Chiave API:[/bold white]")
+            console.print("\n[bold white]Provider API Key Setup:[/bold white]")
             console.print("1. OPENAI_API_KEY\n2. GEMINI_API_KEY\n3. OPENROUTER_API_KEY\n4. GROQ_API_KEY")
-            k_choice = console.input("Seleziona provider (1-4): ").strip()
+            k_choice = console.input("Select provider (1-4): ").strip()
             k_map = {"1": "OPENAI_API_KEY", "2": "GEMINI_API_KEY", "3": "OPENROUTER_API_KEY", "4": "GROQ_API_KEY"}
             env_key = k_map.get(k_choice)
             if env_key:
-                new_key = console.input(f"Inserisci la chiave API per {env_key}: ").strip()
+                new_key = console.input(f"Enter API Key for {env_key}: ").strip()
                 if new_key:
                     config.setdefault("credentials", {})[env_key] = new_key
                     with open(p, "w", encoding="utf-8") as f:
                         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
-                    console.print(f" 🎉 Chiave API {env_key} salvata con successo in {config_path}!")
+                    console.print(t("key_saved", key=env_key, path=config_path))
             return ProviderManager.InteractiveSelectVisionModel(config_path)
 
         # Find chosen item
         selected_item = next((item for item in menu_items if item["id"] == user_choice), None)
 
         if not selected_item:
-            console.print(" ⚠️  Scelta non valida. Mantenuta la configurazione attuale.")
+            console.print(t("invalid_choice"))
             return current_prov_cfg
 
         # Case A: Selected a Local GGUF Model
@@ -346,8 +346,7 @@ class ProviderManager:
                 yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
             console.print(
-                f"\n 🎉 [bold green]Modello Locale Selezionato e Salvato![/bold green] "
-                f"Modello: [bold yellow]{lm['filename']}[/bold yellow] | Proiettore: [bold cyan]{lm['mmproj_filename']}[/bold cyan]\n"
+                f"\n{t('local_selected', model=lm['filename'], mmproj=lm['mmproj_filename'])}\n"
             )
             return ProviderManager.GetProviderConfig(config)
 
@@ -356,22 +355,22 @@ class ProviderManager:
         selected_info = VLM_PROVIDERS[selected_p_id]
 
         if selected_info["requires_key"] and not ProviderManager.GetConfiguredApiKey(selected_p_id, config):
-            console.print(f"\n ⚠️  Manca la chiave API per {selected_info['name']}.")
-            new_key = console.input(f" Inserisci la chiave API ({selected_info['api_key_env']}): ").strip()
+            console.print(t("missing_key_warn", provider=selected_info['name']))
+            new_key = console.input(t("prompt_enter_key", env_name=selected_info['api_key_env'])).strip()
             if new_key:
                 config.setdefault("credentials", {})[selected_info['api_key_env']] = new_key
             else:
-                console.print(" ❌ Operazione annullata. Mantenuta configurazione precedente.")
+                console.print(t("op_canceled"))
                 return current_prov_cfg
 
-        console.print(f"\n[bold white]Modelli Vision disponibili per {selected_info['name']}:[/bold white]")
+        console.print(f"\n[bold white]{t('available_models', provider=selected_info['name'])}[/bold white]")
         for m_idx, m_name in enumerate(selected_info["models"], 1):
             console.print(f"  [{m_idx}] {m_name}")
-        console.print(f"  [C] Nome Modello Personalizzato")
+        console.print(f"  [C] {t('custom_model_option')}")
 
-        m_choice = console.input(f"Seleziona modello [default=1]: ").strip().lower()
+        m_choice = console.input(f"{t('prompt_select_model')} ").strip().lower()
         if m_choice == "c":
-            selected_model = console.input("Inserisci il nome esatto del modello Vision: ").strip()
+            selected_model = console.input(f"{t('prompt_exact_model')} ").strip()
         elif m_choice.isdigit() and 1 <= int(m_choice) <= len(selected_info["models"]):
             selected_model = selected_info["models"][int(m_choice) - 1]
         else:
@@ -387,8 +386,7 @@ class ProviderManager:
             yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
         console.print(
-            f"\n 🎉 [bold green]Configurazione Aggiornata e Salvata![/bold green] "
-            f"Provider: [bold white]{selected_info['name']}[/bold white] | Modello: [bold yellow]{selected_model}[/bold yellow]\n"
+            f"\n{t('config_saved', provider=selected_info['name'], model=selected_model)}\n"
         )
 
         return ProviderManager.GetProviderConfig(config)

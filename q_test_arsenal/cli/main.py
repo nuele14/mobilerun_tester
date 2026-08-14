@@ -99,17 +99,23 @@ def ExecuteCommandLineInterface():
 
     if args.version:
         console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
-        console.print("[bold white]Q - TEST ARSENAL SYSTEM INFORMATION[/bold white]")
+    config_path = Path(args.config)
+    config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
+
+    from q_test_arsenal.core.i18n import I18n, t
+    I18n.set_language(config.get("language", "en"))
+
+    if args.version:
+        console.print(f"[bold cyan]{Q_ASCII_ART}[/bold cyan]")
+        console.print(f"[bold white]{t('sys_info_header')}[/bold white]")
         console.print("[dim]------------------------------------------------------------[/dim]")
-        console.print(f"  • Framework Version : [bold yellow]{__version__}[/bold yellow] ({__version_name__})")
-        console.print(f"  • Release Date      : {__release_date__}")
-        console.print(f"  • Author            : {__author__}")
-        console.print(f"  • License           : {__license__}")
-        console.print(f"  • Copyright         : [dim]{__copyright__}[/dim]")
+        console.print(f"  • {t('ver_info', version=__version__, name=__version_name__)}")
+        console.print(f"  • {t('release_date', date=__release_date__)}")
+        console.print(f"  • {t('author', author=__author__)}")
+        console.print(f"  • {t('license', license=__license__)}")
+        console.print(f"  • {t('copyright', copyright=__copyright__)}")
         console.print("[dim]------------------------------------------------------------[/dim]\n")
         sys.exit(0)
-
-    config_path = Path(args.config)
 
     from q_test_arsenal.core.provider_manager import ProviderManager
     # Interactive Model Selection Menu if --select-model flag is passed OR if model is unselected/missing
@@ -119,10 +125,9 @@ def ExecuteCommandLineInterface():
     logger = GetLogger()
     logger.info("Initializing Q - Test Arsenal CLI")
 
-    config = ScenarioParser.LoadConfigurationFile(str(config_path)) if config_path.exists() else {}
     runner = TestRunner(config, config_path=str(config_path))
 
-    console.print("\n[bold cyan]🚀 Q - TEST ARSENAL[/bold cyan] [dim]- Framework di Testing Mobile[/dim]")
+    console.print(f"\n[bold cyan]{t('cli_title')}[/bold cyan] [dim]- {t('cli_subtitle')}[/dim]")
 
     # =========================================================================
     # [Guide] MODE 1: BATCH SUITE EXECUTION (NO SCENARIO ARGUMENT PASSED)
